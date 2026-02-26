@@ -1,0 +1,69 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &3708484239154383749
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3708484239154383748}
+  - component: {fileID: 3708484239154383751}
+  - component: {fileID: 3708484239154383750}
+  m_Layer: 0
+  m_Name: ChoicesObject
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3708484239154383748
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3708484239154383749}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 30.233, y: 0.006, z: 19.424}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3708484239154383751
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3708484239154383749}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e4dda9d83122d0b49ab835659eb98d2c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxBorder: {fileID: 974146114074879211, guid: e1fe066e6a48ce44c96282557aa3f1ac, type: 3}
+  minBorder: {fileID: 3100788762425520726, guid: f7c316d489edc4447a5c49058e6c04df, type: 3}
+  roadWidth: 0
+  listOfFurniture:
+  - {fileID: 3571257896321791848, guid: fc36826437606844b8b385dbd59d820c, type: 3}
+  - {fileID: 9177384968967349283, guid: 9836377b9e251dc4ca3345b8a993cb24, type: 3}
+  - {fileID: 3698627877208966185, guid: fed0b73a6f5dc1b45bfe9e658e5b88bf, type: 3}
+  - {fileID: 2864949764997164723, guid: 6b63312e9122ff444a8095a9f3c759b6, type: 3}
+  furnitureId: 
+  furniturePosX: []
+--- !u!65 &3708484239154383750
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3708484239154383749}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 1
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 0.37452316, y: 0.5090346, z: 1.5730743}
+  m_Center: {x: -0.0068531036, y: 0.24548271, z: -0.055221558}
