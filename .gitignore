@@ -68,10 +68,6 @@ mono_crash.*
 # Crashlytics
 crashlytics-build.properties
 
-# Firebase native plugins (vượt giới hạn 100MB của GitHub - dùng SDK tải riêng hoặc Git LFS)
-Assets/Firebase/Plugins/x86_64/
-Assets/Firebase/Plugins/iOS/
-
 # TestRunner
 InitTestScene*.unity*
 
@@ -99,9 +95,6 @@ InitTestScene*.unity*
 Thumbs.db
 ehthumbs.db
 Desktop.ini
-
-# Script helper local (không cần đẩy lên repo)
-remove-firebase-from-git.sh
 
 # VSCode (nếu dùng)
 .vscode/
