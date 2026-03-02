@@ -39,6 +39,10 @@ public class GameManager : MonoBehaviour
     public Image fillDistanceBar;
     public GameObject cameraFollowPoint;
 
+    [Header("Shop")]
+    [Tooltip("Gán panel/parent của màn Shop. Khi ấn nút Shop sẽ hiện màn này.")]
+    public GameObject shopScreen;
+
     public int levelNo;
 
     public float totalNumberOfStack;
@@ -204,4 +208,42 @@ public class GameManager : MonoBehaviour
         yield return new WaitForSecondsRealtime(0.5f);
         totalNumberOfStack = GameObject.FindGameObjectsWithTag("Uncollected").Length;
     }
+
+    /// <summary>Hiện màn Shop (gọi từ Button Shop onClick).</summary>
+    public void ShowShopScreen()
+    {
+        if (shopScreen != null)
+            shopScreen.SetActive(true);
+        else
+            Debug.LogWarning("[GameManager] Chưa gán Shop Screen trong Inspector.");
+    }
+
+    /// <summary>Ẩn màn Shop (gọi từ nút đóng trong Shop).</summary>
+    public void HideShopScreen()
+    {
+        if (shopScreen != null)
+            shopScreen.SetActive(false);
+    }
+
+    /// <summary>Đóng màn Shop (gắn vào nút Close/Back trong Shop).</summary>
+    public void CloseShopScreen()
+    {
+        HideShopScreen();
+    }
+
+    // ----- IAP: gọi từ nút Buy trong Shop (ủy quyền cho IAPManager) -----
+    /// <summary>Mua gói 100 coin (iap1 - 0,30 US$).</summary>
+    public void BuyCoins100() { if (IAPManager.Instance != null) IAPManager.Instance.BuyCoins100(); }
+    /// <summary>Mua gói 200 coin (iap2 - 0,49 US$).</summary>
+    public void BuyCoins200() { if (IAPManager.Instance != null) IAPManager.Instance.BuyCoins200(); }
+    /// <summary>Mua gói 400 coin (iap3 - 0,99 US$).</summary>
+    public void BuyCoins400() { if (IAPManager.Instance != null) IAPManager.Instance.BuyCoins400(); }
+    /// <summary>Mua gói 600 coin (iap4 - 1,99 US$).</summary>
+    public void BuyCoins600() { if (IAPManager.Instance != null) IAPManager.Instance.BuyCoins600(); }
+    /// <summary>Mua gói 1000 coin (iap5 - 2,99 US$).</summary>
+    public void BuyCoins1000() { if (IAPManager.Instance != null) IAPManager.Instance.BuyCoins1000(); }
+    /// <summary>Mua gói 2000 coin (iap6 - 4,99 US$).</summary>
+    public void BuyCoins2000() { if (IAPManager.Instance != null) IAPManager.Instance.BuyCoins2000(); }
+    /// <summary>Mua gói 5000 coin (iap7 - 9,99 US$).</summary>
+    public void BuyCoins5000() { if (IAPManager.Instance != null) IAPManager.Instance.BuyCoins5000(); }
 }
