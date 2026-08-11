@@ -29,7 +29,7 @@ namespace TapTap
 
         private void Start()
         {
-            CloseShopScreen();
+            Close(); // im lặng: CloseShopScreen() sẽ kêu tiếng nút, không hợp lúc mới vào game
         }
 
         public void OnEnableEvent()
@@ -44,6 +44,8 @@ namespace TapTap
 
         public void ShowShopScreen()
         {
+            SoundManager.PlayButton();
+
             if (m_ShopPanel != null) m_ShopPanel.SetActive(true);
             if (m_ShopButton != null) m_ShopButton.SetActive(false);
 
@@ -51,6 +53,13 @@ namespace TapTap
         }
 
         public void CloseShopScreen()
+        {
+            SoundManager.PlayButton();
+
+            Close();
+        }
+
+        private void Close()
         {
             if (m_ShopPanel != null) m_ShopPanel.SetActive(false);
             if (m_ShopButton != null) m_ShopButton.SetActive(true);

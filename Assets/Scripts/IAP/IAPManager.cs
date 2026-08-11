@@ -176,6 +176,8 @@ namespace TapTap
             PlayerPrefs.SetInt("IAP_" + id, 1);
             PlayerPrefs.Save();
 
+            SoundManager.PlayPurchase();
+
             if (OnPurchaseSuccess != null) OnPurchaseSuccess.Invoke(id);
 
             return PurchaseProcessingResult.Complete;

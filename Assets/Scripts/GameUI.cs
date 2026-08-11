@@ -27,7 +27,18 @@ namespace TapTap
         [SerializeField]
         private GameObject m_GameOverText;
 
+        [Header("Best score")]
+
+        [SerializeField]
+        private Text m_BestScoreText;
+
+        [Tooltip("Hiện lên khi ván vừa rồi phá kỷ lục.")]
+        [SerializeField]
+        private GameObject m_NewBestBadge;
+
         private string m_ScoreTextFormat;
+
+        private string m_BestScoreTextFormat;
 
         private IEnumerator m_GameOverCoroutine;
 
@@ -70,6 +81,28 @@ namespace TapTap
             }
 
             m_ScoreText.text = string.Format(m_ScoreTextFormat, GameLogic.Score);
+
+            RefreshBestScore();
+        }
+
+        private void RefreshBestScore()
+        {
+            if (m_BestScoreText == null)
+            {
+                return;
+            }
+
+            if (string.IsNullOrEmpty(m_BestScoreTextFormat))
+            {
+                m_BestScoreTextFormat = m_BestScoreText.text;
+
+                if (string.IsNullOrEmpty(m_BestScoreTextFormat) || !m_BestScoreTextFormat.Contains("{0}"))
+                {
+                    m_BestScoreTextFormat = "BEST {0}";
+                }
+            }
+
+            m_BestScoreText.text = string.Format(m_BestScoreTextFormat, BestScore.Value);
         }
 
         public void OnGameStarted()
@@ -102,6 +135,11 @@ namespace TapTap
 
             m_GameOverText.SetActive(true);
 
+            if (m_NewBestBadge != null)
+            {
+                m_NewBestBadge.SetActive(GameLogic.IsNewBestScore);
+            }
+
             m_RestartRaycastTarget.SetActive(true);
         }
 
@@ -121,6 +159,11 @@ namespace TapTap
             StopGameOverCoroutine();
 
             m_GameOverText.SetActive(false);
+
+            if (m_NewBestBadge != null)
+            {
+                m_NewBestBadge.SetActive(false);
+            }
 
             m_RestartRaycastTarget.SetActive(false);
         }
