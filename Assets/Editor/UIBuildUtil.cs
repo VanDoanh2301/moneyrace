@@ -163,8 +163,14 @@ namespace RingGameEditor
 
         public static Image AddImage(RectTransform rect, string spriteName, bool raycastTarget, bool preserveAspect)
         {
+            return AddImage(rect, LoadSprite(spriteName), raycastTarget, preserveAspect);
+        }
+
+        /// <summary>Như AddImage(name,...) nhưng nhận thẳng Sprite — dùng cho sprite nằm ngoài Assets/Sprites/.</summary>
+        public static Image AddImage(RectTransform rect, Sprite sprite, bool raycastTarget, bool preserveAspect)
+        {
             Image image = rect.gameObject.AddComponent<Image>();
-            image.sprite = LoadSprite(spriteName);
+            image.sprite = sprite;
             image.type = Image.Type.Simple;
             image.preserveAspect = preserveAspect;
             image.raycastTarget = raycastTarget;
@@ -203,6 +209,70 @@ namespace RingGameEditor
             Image image = AddImage(rect, spriteName, true, true);
 
             return AddButton(rect, image);
+        }
+
+        /// <summary>
+        /// Dựng Slider thủ công (Background / Fill Area-Fill / Handle Slide Area-Handle) — Unity không
+        /// có API runtime dựng sẵn cho việc này, item menu GameObject/UI/Slider chỉ có trong Editor nội bộ.
+        /// </summary>
+        public static Slider AddSlider(RectTransform rect, Sprite background, Sprite fill, Sprite handle)
+        {
+            Slider slider = rect.gameObject.AddComponent<Slider>();
+
+            RectTransform bg = NewUI("Background", rect);
+            Stretch(bg);
+            AddImage(bg, background, false, false);
+
+            RectTransform fillArea = NewUI("Fill Area", rect);
+            Stretch(fillArea);
+            RectTransform fillRect = NewUI("Fill", fillArea);
+            fillRect.anchorMin = Vector2.zero;
+            fillRect.anchorMax = Vector2.one;
+            fillRect.pivot = new Vector2(0f, 0.5f);
+            fillRect.offsetMin = Vector2.zero;
+            fillRect.offsetMax = Vector2.zero;
+            AddImage(fillRect, fill, false, false);
+
+            RectTransform handleArea = NewUI("Handle Slide Area", rect);
+            Stretch(handleArea);
+            RectTransform handleRect = NewUI("Handle", handleArea);
+            handleRect.anchorMin = new Vector2(0f, 0.5f);
+            handleRect.anchorMax = new Vector2(0f, 0.5f);
+            handleRect.pivot = new Vector2(0.5f, 0.5f);
+            handleRect.sizeDelta = new Vector2(40f, 40f);
+            Image handleImage = AddImage(handleRect, handle, false, true);
+
+            slider.direction = Slider.Direction.LeftToRight;
+            slider.transition = Selectable.Transition.ColorTint;
+            slider.fillRect = fillRect;
+            slider.handleRect = handleRect;
+            slider.targetGraphic = handleImage;
+
+            return slider;
+        }
+
+        /// <summary>
+        /// Dựng Toggle thủ công (Background chứa Checkmark) — cùng lý do không có API runtime dựng sẵn.
+        /// </summary>
+        public static Toggle AddToggle(RectTransform rect, Sprite background, Sprite checkmark)
+        {
+            Toggle toggle = rect.gameObject.AddComponent<Toggle>();
+
+            RectTransform bg = NewUI("Background", rect);
+            Stretch(bg);
+            Image bgImage = AddImage(bg, background, true, false);
+
+            RectTransform check = NewUI("Checkmark", bg);
+            Stretch(check);
+            check.offsetMin = new Vector2(6f, 6f);
+            check.offsetMax = new Vector2(-6f, -6f);
+            Image checkImage = AddImage(check, checkmark, false, false);
+
+            toggle.targetGraphic = bgImage;
+            toggle.graphic = checkImage;
+            toggle.transition = Selectable.Transition.ColorTint;
+
+            return toggle;
         }
 
         // ----- Serialized fields -----

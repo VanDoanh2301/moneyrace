@@ -16,8 +16,6 @@ namespace RingGameEditor
     public static class ShopScreenBuilder
     {
         private const string ShopRootName = "Shop";
-        private const string ShopButtonName = "Shop Button";
-        private const string CoinHudName = "Coin HUD";
 
         // Các số đo dưới đây tuned cho canvas tham chiếu 1080x1920 (portrait). Ở Build(), chúng
         // được nhân với hScale/vScale đọc từ CanvasScaler thật của scene, để layout không vỡ nếu
@@ -103,7 +101,7 @@ namespace RingGameEditor
             }
 
             if (!U.EnsureSprites("Build Shop Screen",
-                    "bg_iap", "bg_button_iap", "iv_buy", "iv_back", "iv_shop", "coin",
+                    "Back New", "bg_button_iap", "iv_buy", "iv_back", "coin",
                     "iv_gold1", "iv_gold2", "iv_gold3", "iv_gold4", "iv_gold5", HeaderSprite))
             {
                 return false;
@@ -123,38 +121,15 @@ namespace RingGameEditor
             Transform canvas = canvasGo.transform;
 
             U.DestroyIfExists(canvas, ShopRootName);
-            U.DestroyIfExists(canvas, ShopButtonName);
-            U.DestroyIfExists(canvas, CoinHudName);
 
             float contentWidth = refRes.x - PanelSideMargin * hScale * 2f;
 
-            // ---------- HUD: ví coin (góc trên trái, ngoài shop) ----------
-
-            RectTransform hud = U.NewUI(CoinHudName, canvas);
-            U.Place(hud, new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(24f * hScale, -24f * vScale), new Vector2(320f * hScale, 88f * vScale));
-
-            RectTransform hudIcon = U.NewUI("Icon", hud);
-            U.Place(hudIcon, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
-                new Vector2(8f * hScale, 0f), new Vector2(72f * vScale, 72f * vScale));
-            U.AddImage(hudIcon, "coin", false, true);
-
-            RectTransform hudText = U.NewUI("Coins Text", hud);
-            U.Place(hudText, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
-                new Vector2(96f * hScale, 0f), new Vector2(216f * hScale, 72f * vScale));
-            Text hudLabel = U.AddText(hudText, font, "{0}", Mathf.RoundToInt(48f * vScale), TextAnchor.MiddleLeft, U.GoldText);
-
-            CoinHUD coinHud = hud.gameObject.AddComponent<CoinHUD>();
-            U.SetObjectField(coinHud, "m_CoinsText", hudLabel);
-
-            // ---------- Nút mở shop (góc trên phải, chỉ hiện ở menu) ----------
-
-            RectTransform shopBtn = U.NewUI(ShopButtonName, canvas);
-            U.Place(shopBtn, new Vector2(1f, 1f), new Vector2(1f, 1f),
-                new Vector2(-24f * hScale, -24f * vScale), new Vector2(120f * vScale, 120f * vScale));
-            Button shopBtnButton = U.IconButton(shopBtn, "iv_shop");
+            // Coin HUD không còn dựng ở đây — MenuButtonsBuilder dựng nó làm con của
+            // Bottom Bar/Shop (hiện coin ngay dưới icon Shop) sau khi builder này chạy xong.
 
             // ---------- Shop: node luôn active, giữ component ShopScreen ----------
+            // Nút mở shop (m_ShopButton) không còn dựng ở đây — MenuButtonsBuilder sẽ tạo nút
+            // "Shop" trong Bottom Bar và tự gán vào field này sau khi builder này chạy xong.
 
             RectTransform shopRoot = U.NewUI(ShopRootName, canvas);
             U.Stretch(shopRoot);
@@ -164,7 +139,7 @@ namespace RingGameEditor
 
             RectTransform panel = U.NewUI("Shop Panel", shopRoot);
             U.Stretch(panel);
-            U.AddImage(panel, "bg_iap", true, false); // raycast on => chặn click xuyên xuống gameplay
+            U.AddImage(panel, "Back New", true, false); // raycast on => chặn click xuyên xuống gameplay
 
             // Header: thanh ngang bo góc + tiêu đề + nút back
             RectTransform header = U.TopCenter("Header", panel, HeaderTop * vScale, contentWidth, HeaderHeight * vScale);
@@ -257,10 +232,8 @@ namespace RingGameEditor
             // ---------- Nối serialized field + sự kiện ----------
 
             U.SetObjectField(shopScreen, "m_ShopPanel", panel.gameObject);
-            U.SetObjectField(shopScreen, "m_ShopButton", shopBtn.gameObject);
             U.SetObjectField(shopScreen, "m_CoinsText", coinsLabelText);
 
-            UnityEventTools.AddVoidPersistentListener(shopBtnButton.onClick, shopScreen.ShowShopScreen);
             UnityEventTools.AddVoidPersistentListener(backButton.onClick, shopScreen.CloseShopScreen);
 
             panel.gameObject.SetActive(false);
