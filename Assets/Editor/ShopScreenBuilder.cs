@@ -35,11 +35,12 @@ namespace RingGameEditor
         private const float RowSpacing = 18f;
         private const int RowPadding = 20;
 
-        /// <summary>Ảnh nền thanh header (thanh bo góc, không dùng header_iap vì tỉ lệ/chữ in sẵn không hợp).</summary>
-        private const string HeaderSprite = "bg_button_iap";
-
         /// <summary>Đặt false nếu ảnh header đã in sẵn chữ tiêu đề.</summary>
         private const bool ShowHeaderTitle = true;
+
+        // Nền header/pill/hàng: vẽ bo góc bằng code (RoundedRectGenerator) thay vì kéo giãn ảnh
+        // bg_button_iap.png — kéo giãn không đều tỉ lệ (hàng rất dẹt) làm góc bo gần như biến mất.
+        private static readonly Color PanelBlue = new Color32(21, 35, 135, 255);
 
         private struct Pack
         {
@@ -101,8 +102,8 @@ namespace RingGameEditor
             }
 
             if (!U.EnsureSprites("Build Shop Screen",
-                    "Back New", "bg_button_iap", "iv_buy", "iv_back", "coin",
-                    "iv_gold1", "iv_gold2", "iv_gold3", "iv_gold4", "iv_gold5", HeaderSprite))
+                    "Back New", "iv_buy", "iv_back", "coin",
+                    "iv_gold1", "iv_gold2", "iv_gold3", "iv_gold4", "iv_gold5"))
             {
                 return false;
             }
@@ -143,7 +144,7 @@ namespace RingGameEditor
 
             // Header: thanh ngang bo góc + tiêu đề + nút back
             RectTransform header = U.TopCenter("Header", panel, HeaderTop * vScale, contentWidth, HeaderHeight * vScale);
-            U.AddImage(header, HeaderSprite, false, false);
+            U.AddSlicedImage(header, RoundedRectGenerator.Ensure(), PanelBlue, false);
 
             if (ShowHeaderTitle)
             {
@@ -159,7 +160,7 @@ namespace RingGameEditor
 
             // Pill số coin: icon + số, canh giữa
             RectTransform coinsPill = U.TopCenter("Coins Pill", panel, CoinsPillTop * vScale, CoinsPillWidth * hScale, CoinsPillHeight * vScale);
-            U.AddImage(coinsPill, "bg_button_iap", false, false);
+            U.AddSlicedImage(coinsPill, RoundedRectGenerator.Ensure(), PanelBlue, false);
 
             RectTransform coinsIcon = U.NewUI("Icon", coinsPill);
             U.Place(coinsIcon, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
@@ -171,18 +172,21 @@ namespace RingGameEditor
                 new Vector2(120f * hScale, 0f), new Vector2(260f * hScale, 70f * vScale));
             Text coinsLabelText = U.AddText(coinsValue, font, "{0}", Mathf.RoundToInt(48f * vScale), TextAnchor.MiddleLeft, U.GoldText);
 
-            // Scroll view
+            // Scroll view — stretch để LUÔN lấp đầy khoảng trống còn lại của panel (từ dưới Coins Pill
+            // tới gần đáy), thay vì tính chiều cao cố định theo refRes.y (chiều cao KHAI BÁO trong
+            // CanvasScaler). Canvas ở chế độ Match Width nên trên máy có tỉ lệ màn hình khác tỉ lệ
+            // tham chiếu (800x600, gần vuông), chiều cao THẬT hiển thị luôn lớn hơn 600 đơn vị khá
+            // nhiều (điện thoại dọc) — tính cố định theo 600 làm nội dung chỉ lấp một phần nhỏ phía
+            // trên, để trống cả mảng lớn phía dưới. Stretch theo % panel thì luôn đúng ở mọi tỉ lệ máy.
             float scrollTopPx = ScrollTop * vScale;
             float scrollBottomPx = ScrollBottom * vScale;
-            float scrollHeight = refRes.y - scrollTopPx - scrollBottomPx;
-            float scrollCenterFromBottom = refRes.y - scrollTopPx - scrollHeight * 0.5f;
 
             RectTransform scroll = U.NewUI("Scroll View", panel);
             scroll.anchorMin = new Vector2(0.5f, 0f);
             scroll.anchorMax = new Vector2(0.5f, 1f);
             scroll.pivot = new Vector2(0.5f, 0.5f);
-            scroll.sizeDelta = new Vector2(contentWidth, -(scrollTopPx + scrollBottomPx));
-            scroll.anchoredPosition = new Vector2(0f, scrollCenterFromBottom - refRes.y * 0.5f);
+            scroll.offsetMin = new Vector2(-contentWidth * 0.5f, scrollBottomPx);
+            scroll.offsetMax = new Vector2(contentWidth * 0.5f, -scrollTopPx);
 
             ScrollRect scrollRect = scroll.gameObject.AddComponent<ScrollRect>();
             scrollRect.horizontal = false;
@@ -194,12 +198,11 @@ namespace RingGameEditor
             U.Stretch(viewport);
             viewport.gameObject.AddComponent<RectMask2D>();
 
+            // Content KHỚP HẲN với Viewport (stretch, không dùng ContentSizeFitter tự co theo nội
+            // dung) — để 7 hàng có thể giãn (flexibleHeight) lấp đầy toàn bộ chiều cao thật của máy,
+            // thay vì giữ chiều cao cố định rồi để trống phần dư bên dưới trên máy cao hơn tham chiếu.
             RectTransform content = U.NewUI("Content", viewport);
-            content.anchorMin = new Vector2(0f, 1f);
-            content.anchorMax = new Vector2(1f, 1f);
-            content.pivot = new Vector2(0.5f, 1f);
-            content.offsetMin = Vector2.zero;
-            content.offsetMax = Vector2.zero;
+            U.Stretch(content);
 
             float rowSpacingPx = RowSpacing * vScale;
             int rowPaddingPx = Mathf.RoundToInt(RowPadding * vScale);
@@ -211,11 +214,7 @@ namespace RingGameEditor
             layout.childControlWidth = true;
             layout.childControlHeight = true;
             layout.childForceExpandWidth = true;
-            layout.childForceExpandHeight = false;
-
-            ContentSizeFitter fitter = content.gameObject.AddComponent<ContentSizeFitter>();
-            fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
-            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            layout.childForceExpandHeight = true;
 
             scrollRect.viewport = viewport;
             scrollRect.content = content;
@@ -241,8 +240,8 @@ namespace RingGameEditor
 
             float contentHeight = Packs.Length * rowHeightPx + (Packs.Length - 1) * rowSpacingPx + rowPaddingPx * 2f;
             Debug.Log(string.Format(
-                "[ShopBuilder] Đã dựng Shop Screen: {0} gói, canvas ref {1}x{2}, viewport {3:0}px, content {4:0}px.",
-                Packs.Length, refRes.x, refRes.y, scrollHeight, contentHeight), shopRoot.gameObject);
+                "[ShopBuilder] Đã dựng Shop Screen: {0} gói, canvas ref {1}x{2} (danh nghĩa), content {3:0}px, scroll view co giãn lấp đầy phần còn lại của màn hình thật.",
+                Packs.Length, refRes.x, refRes.y, contentHeight), shopRoot.gameObject);
 
             return true;
         }
@@ -252,11 +251,15 @@ namespace RingGameEditor
         {
             RectTransform row = U.NewUI("Inapp" + index, parent);
             row.sizeDelta = new Vector2(0f, rowHeightPx);
-            U.AddImage(row, "bg_button_iap", true, false);
+            U.AddSlicedImage(row, RoundedRectGenerator.Ensure(), PanelBlue, true);
 
             LayoutElement element = row.gameObject.AddComponent<LayoutElement>();
             element.minHeight = rowHeightPx;
             element.preferredHeight = rowHeightPx;
+            // flexibleHeight cho phép hàng giãn thêm để 7 hàng cùng chia đều khoảng trống dư ra khi
+            // màn hình thật cao hơn tham chiếu — nội dung bên trong (icon/chữ) vẫn giữ nguyên size,
+            // chỉ căn giữa theo chiều dọc trong hàng đã giãn.
+            element.flexibleHeight = 1f;
 
             // Bố cục ngang trong hàng (x/width theo hScale, y/height theo vScale):
             //   Gold 30..180 | Title 210..550 | Price 570..750 | Buy 766..934

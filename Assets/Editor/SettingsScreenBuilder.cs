@@ -28,11 +28,14 @@ namespace RingGameEditor
         private const float RowHeight = 140f;
         private const float RowSpacing = 40f;
 
-        private const string HeaderSprite = "bg_button_iap";
-
         // Sprite fallback nằm ngoài Assets/Sprites/ (không resolve được qua UIBuildUtil.LoadSprite).
         private const string HandleSpritePath = "Assets/Images/white_circle.png";
         private const string CheckmarkSpritePath = "Assets/Images/Checkmark.png";
+
+        // Nền header/slider/toggle: vẽ bo góc bằng code (RoundedRectGenerator) thay vì kéo giãn ảnh
+        // bg_button_iap.png/rounded.png (Image.Type.Simple làm góc bo bị bóp méo khi resize không đều).
+        private static readonly Color PanelBlue = new Color32(21, 35, 135, 255);
+        private static readonly Color TrackColor = new Color(1f, 1f, 1f, 0.25f);
 
         [MenuItem("Tools/RingGame/Build Settings Screen")]
         public static void BuildSettingsScreen()
@@ -63,7 +66,7 @@ namespace RingGameEditor
                 return false;
             }
 
-            if (!U.EnsureSprites("Build Settings Screen", "Back New", "iv_back", "rounded", HeaderSprite))
+            if (!U.EnsureSprites("Build Settings Screen", "Back New", "iv_back"))
             {
                 return false;
             }
@@ -111,7 +114,7 @@ namespace RingGameEditor
 
             // Header: thanh ngang bo góc + tiêu đề + nút back
             RectTransform header = U.TopCenter("Header", panel, HeaderTop * vScale, contentWidth, HeaderHeight * vScale);
-            U.AddImage(header, HeaderSprite, false, false);
+            U.AddSlicedImage(header, RoundedRectGenerator.Ensure(), PanelBlue, false);
 
             RectTransform headerTitle = U.NewUI("Title", header);
             U.Stretch(headerTitle);
@@ -134,7 +137,10 @@ namespace RingGameEditor
             RectTransform volumeControl = U.NewUI("Control", volumeRow);
             U.Place(volumeControl, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
                 Vector2.zero, new Vector2(contentWidth - 320f * hScale, 24f * vScale));
-            Slider volumeSlider = U.AddSlider(volumeControl, U.LoadSprite("rounded"), U.LoadSprite("rounded"), handleSprite);
+            Sprite roundedRect = RoundedRectGenerator.Ensure();
+            Slider volumeSlider = U.AddSlider(volumeControl, roundedRect, roundedRect, handleSprite);
+            volumeControl.Find("Background").GetComponent<Image>().color = TrackColor;
+            volumeControl.Find("Fill Area/Fill").GetComponent<Image>().color = U.GoldText;
             volumeSlider.minValue = 0f;
             volumeSlider.maxValue = 1f;
             volumeSlider.wholeNumbers = false;
@@ -153,7 +159,8 @@ namespace RingGameEditor
             RectTransform muteControl = U.NewUI("Control", muteRow);
             U.Place(muteControl, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
                 new Vector2(-20f * hScale, 0f), new Vector2(80f * vScale, 80f * vScale));
-            Toggle muteToggle = U.AddToggle(muteControl, U.LoadSprite("rounded"), checkmarkSprite);
+            Toggle muteToggle = U.AddToggle(muteControl, roundedRect, checkmarkSprite);
+            muteControl.Find("Background").GetComponent<Image>().color = PanelBlue;
             muteToggle.isOn = SoundManager.Muted;
 
             // ---------- Nối serialized field + sự kiện ----------

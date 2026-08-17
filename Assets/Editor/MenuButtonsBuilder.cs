@@ -28,6 +28,10 @@ namespace RingGameEditor
         private const float SlotAnchoredX = 100f;
         private const float SlotAnchoredY = 0.0012f;
 
+        // Nền pill Coin HUD: vẽ bo góc bằng code (RoundedRectGenerator), đồng bộ tông xanh navy
+        // với Shop/Settings.
+        private static readonly Color CoinPillColor = new Color(0.082f, 0.137f, 0.529f, 0.85f);
+
         [MenuItem("Tools/RingGame/Build Menu Buttons")]
         public static void BuildMenuButtons()
         {
@@ -124,14 +128,24 @@ namespace RingGameEditor
                 if (titleText != null) titleText.text = "Untangle Rings";
             }
 
-            // ---------- Nền Menu ----------
+            // ---------- Canvas chính LUÔN ở Overlay ----------
+            // Screen Space - Overlay là bắt buộc để UI (title, nút, panel Shop/Settings...) không bao giờ
+            // bị 3D che — thử đổi nguyên Canvas này sang Screen Space - Camera ở bản trước đã làm MẤT
+            // TOÀN BỘ UI (không chỉ bị che), nên revert lại đây cho chắc (idempotent, không hại gì nếu
+            // Canvas vốn đã là Overlay).
+            ResetCanvasToOverlay(canvas);
+            ReenablePreview3D();
 
+            // Dọn "Background" cũ còn sót lại BÊN TRONG Canvas Overlay (từ bản build lỗi trước) — nếu để
+            // sót, nó sẽ lại đè lên preview 3D y hệt bug ban đầu, dù Background Canvas riêng đã đúng.
             U.DestroyIfExists(canvas, BackgroundName);
 
-            RectTransform background = U.NewUI(BackgroundName, canvas);
-            U.Stretch(background);
-            U.AddImage(background, "Back New", false, false); // raycast off => không chặn click nút Menu
-            background.SetAsFirstSibling(); // render sau lưng mọi thứ khác trong Canvas
+            // ---------- Nền Menu: Canvas RIÊNG, Screen Space - Camera, nằm sau preview 3D ----------
+            // Không thể đặt ảnh nền full-screen vào Canvas Overlay ở trên (nó sẽ luôn vẽ đè lên preview
+            // 3D của MenuPrefab, bất kể sibling order). Giải pháp: một Canvas riêng, độc lập, dùng
+            // Screen Space - Camera với Plane Distance nằm SAU MenuPrefab (~10-11 đơn vị) — Canvas Overlay
+            // ở trên vẫn luôn vẽ đè lên MỌI THỨ (kể cả Canvas Camera này), nên UI tương tác không đổi.
+            BuildBackgroundCanvas(scene);
 
             // ---------- Xoá 2 nút cũ + dựng lại (idempotent) ----------
 
@@ -166,6 +180,7 @@ namespace RingGameEditor
             RectTransform coinHud = U.NewUI("Coin HUD", shopSlot);
             U.Place(coinHud, new Vector2(0.5f, 0f), new Vector2(0.5f, 1f),
                 new Vector2(0f, -6f), new Vector2(90f, 26f));
+            U.AddSlicedImage(coinHud, RoundedRectGenerator.Ensure(), CoinPillColor, false);
 
             RectTransform coinIcon = U.NewUI("Icon", coinHud);
             U.Place(coinIcon, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
@@ -181,9 +196,8 @@ namespace RingGameEditor
             U.SetObjectField(coinHudComp, "m_CoinsText", coinLabel);
 
             // ---------- Nút Setting: đúng vị trí Share cũ (trái) ----------
-            // Không có sẵn icon bánh răng trong project (đã kiểm tra Assets/Images, Assets/Sprites) và
-            // Unity AI asset-generation không khả dụng trong phiên Editor này (GetModels trả về rỗng) —
-            // dùng chữ "SET" thay icon, giống cách IAPButton dùng Text cho nút giá thay vì icon.
+            // Icon bánh răng trắng được vẽ bằng code (IconGenerator) — Unity AI asset-generation
+            // không khả dụng trong phiên Editor này (GetModels trả về rỗng).
 
             RectTransform settingSlot = U.NewUI("Setting", bottomBar);
             U.Place(settingSlot, new Vector2(0f, 0.5f), new Vector2(0.5f, 0.5f),
@@ -191,9 +205,9 @@ namespace RingGameEditor
             Image settingBackdrop = U.AddImage(settingSlot, circleSprite, true, false);
             settingBackdrop.color = CircleColor;
 
-            RectTransform settingLabel = U.NewUI("Icon", settingSlot);
-            U.Stretch(settingLabel);
-            U.AddText(settingLabel, font, "SET", 30, TextAnchor.MiddleCenter, Color.white);
+            RectTransform settingIcon = U.NewUI("Icon", settingSlot);
+            U.Place(settingIcon, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(48f, 48f));
+            U.AddImage(settingIcon, IconGenerator.EnsureSettingsIcon(), false, true);
 
             Button settingButton = U.AddButton(settingSlot, settingBackdrop);
             UnityEventTools.AddVoidPersistentListener(settingButton.onClick, settingsScreen.ShowSettingsScreen);
@@ -213,6 +227,82 @@ namespace RingGameEditor
             if (audioGo == null) return null;
 
             return audioGo.GetComponent<AudioSource>();
+        }
+
+        /// <summary>Đảm bảo Canvas chính là Screen Space - Overlay (an toàn dù đã là Overlay sẵn).</summary>
+        private static void ResetCanvasToOverlay(Transform canvas)
+        {
+            Canvas canvasComp = canvas.GetComponent<Canvas>();
+            if (canvasComp == null) return;
+
+            canvasComp.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvasComp.worldCamera = null;
+        }
+
+        /// <summary>Tìm Main Camera theo Camera.main, dự phòng bằng tên GameObject nếu tag chưa gán.</summary>
+        private static Camera FindMainCamera()
+        {
+            Camera mainCamera = Camera.main;
+            if (mainCamera != null) return mainCamera;
+
+            GameObject camGo = GameObject.Find("Main Camera");
+            return camGo != null ? camGo.GetComponent<Camera>() : null;
+        }
+
+        /// <summary>
+        /// Dựng Canvas riêng (root level, ngoài "Canvas" chính) chỉ chứa ảnh nền, ở Screen Space - Camera
+        /// với Plane Distance nằm sau MenuPrefab (~10-11 đơn vị từ camera) để preview 3D vẽ đè lên nó.
+        /// Canvas chính (Overlay) vẫn luôn vẽ đè lên Canvas này, nên UI tương tác không bị ảnh hưởng.
+        /// </summary>
+        private static void BuildBackgroundCanvas(UnityEngine.SceneManagement.Scene scene)
+        {
+            Camera mainCamera = FindMainCamera();
+            if (mainCamera == null)
+            {
+                Debug.LogWarning("[MenuButtonsBuilder] Không tìm thấy Main Camera — bỏ qua dựng Background Canvas.");
+                return;
+            }
+
+            GameObject existing = U.FindRootObject(scene, "Background Canvas");
+            if (existing != null) Object.DestroyImmediate(existing);
+
+            GameObject bgCanvasGo = new GameObject("Background Canvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
+            int uiLayer = LayerMask.NameToLayer("UI");
+            if (uiLayer >= 0) bgCanvasGo.layer = uiLayer;
+
+            Canvas bgCanvas = bgCanvasGo.GetComponent<Canvas>();
+            bgCanvas.renderMode = RenderMode.ScreenSpaceCamera;
+            bgCanvas.worldCamera = mainCamera;
+            // MenuPrefab (nhẫn/đường ray) cách camera ~10-11 đơn vị — 50 chừa dư nhiều, vẫn nhỏ hơn
+            // nhiều so với far clip (1000) của camera.
+            bgCanvas.planeDistance = 50f;
+
+            CanvasScaler bgScaler = bgCanvasGo.GetComponent<CanvasScaler>();
+            bgScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            bgScaler.referenceResolution = new Vector2(800f, 600f);
+            bgScaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+            bgScaler.matchWidthOrHeight = 0f;
+
+            RectTransform background = U.NewUI(BackgroundName, bgCanvasGo.transform);
+            U.Stretch(background);
+            U.AddImage(background, "Back New", false, false); // raycast off => không chặn click nút Menu
+        }
+
+        /// <summary>
+        /// "Test" (mesh đường ray/wire dưới MenuPrefab) đang bị tắt sẵn trong scene — bật lại để khớp
+        /// hình ảnh preview gốc (nhẫn + đường ray + bi), không chỉ còn mỗi nhẫn.
+        /// </summary>
+        private static void ReenablePreview3D()
+        {
+            GameObject menuPrefab = GameObject.Find("MenuPrefab");
+            if (menuPrefab == null) return;
+
+            Transform wire = menuPrefab.transform.Find("Test");
+            if (wire != null && !wire.gameObject.activeSelf)
+            {
+                wire.gameObject.SetActive(true);
+                Debug.Log("[MenuButtonsBuilder] Đã bật lại 'MenuPrefab/Test' (mesh đường ray) — trước đó bị tắt trong scene.");
+            }
         }
     }
 }

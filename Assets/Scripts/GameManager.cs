@@ -16,6 +16,9 @@ public class GameManager : MonoBehaviour
     public GameObject[] GameLevels;
     int CurrentLevel;
     public Text LevelIndicator;
+
+    private const int LevelCompleteCoinReward = 20;
+
     // Start is called before the first frame update
 
     public void Awake()
@@ -62,6 +65,7 @@ public class GameManager : MonoBehaviour
         WinExplosion1.Play();
 
         PlayerPrefs.SetInt("Level",(CurrentLevel+1));
+        CoinWallet.Add(LevelCompleteCoinReward, true);
         yield return new WaitForSeconds(2f);
         Level.SetActive(false);
         WinExplosion2.Play();

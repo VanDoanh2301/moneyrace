@@ -16,6 +16,7 @@ namespace RingGameEditor
     {
         private const string TopBarName = "TopBar";
         private const string HintName = "Hint";
+        private const string ToastName = "Toast";
 
         // Sprite nằm ngoài Assets/Sprites/ nên không resolve được qua UIBuildUtil.LoadSprite,
         // phải load thẳng theo đường dẫn — cùng ảnh nền tròn với nút Reload để đồng bộ giao diện.
@@ -74,7 +75,15 @@ namespace RingGameEditor
                 return false;
             }
 
+            Font font = U.LoadDefaultFont();
+            if (font == null)
+            {
+                Debug.LogError("[GameHudBuilder] Không tìm được font để dựng UI.");
+                return false;
+            }
+
             U.DestroyIfExists(topBar, HintName);
+            U.DestroyIfExists(canvas, ToastName);
 
             RectTransform hintSlot = U.NewUI(HintName, topBar);
             U.Place(hintSlot, new Vector2(1f, 0.5f), new Vector2(0.5f, 0.5f),
@@ -90,7 +99,27 @@ namespace RingGameEditor
             Button hintButton = U.AddButton(hintSlot, backdrop);
             UnityEventTools.AddVoidPersistentListener(hintButton.onClick, hintController.UseHint);
 
-            Debug.Log("[GameHudBuilder] Đã dựng nút Hint (tốn " + HintController.HintCost + " coin) cạnh Reload.", hintSlot.gameObject);
+            // ---------- Toast: thông báo ngắn (vd "Không đủ coin!"), giữa dưới màn hình ----------
+
+            RectTransform toastRoot = U.NewUI(ToastName, canvas);
+            U.Place(toastRoot, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 100f), new Vector2(420f, 70f));
+
+            RectTransform toastPanel = U.NewUI("Panel", toastRoot);
+            U.Stretch(toastPanel);
+            U.AddSlicedImage(toastPanel, RoundedRectGenerator.Ensure(), new Color(0f, 0f, 0f, 0.8f), false);
+
+            RectTransform toastTextRt = U.NewUI("Text", toastPanel);
+            U.Stretch(toastTextRt);
+            Text toastText = U.AddText(toastTextRt, font, "", 32, TextAnchor.MiddleCenter, Color.white);
+
+            ToastMessage toast = toastRoot.gameObject.AddComponent<ToastMessage>();
+            U.SetObjectField(toast, "m_Root", toastPanel.gameObject);
+            U.SetObjectField(toast, "m_Text", toastText);
+            toastPanel.gameObject.SetActive(false);
+
+            U.SetObjectField(hintController, "m_Toast", toast);
+
+            Debug.Log("[GameHudBuilder] Đã dựng nút Hint (tốn " + HintController.HintCost + " coin) cạnh Reload, kèm thông báo Toast.", hintSlot.gameObject);
 
             return true;
         }

@@ -1,5 +1,7 @@
 using UnityEngine;
 
+#pragma warning disable CS0649
+
 /// <summary>
 /// Nút Hint trong Game scene: tốn coin, làm sáng Ring còn lại gần nhất để gợi ý người chơi.
 /// Ring không có thứ tự/identity riêng nên chọn Ring gần Main Camera nhất.
@@ -8,11 +10,15 @@ public class HintController : MonoBehaviour
 {
     public const int HintCost = 10;
 
+    [SerializeField]
+    private ToastMessage m_Toast;
+
     public void UseHint()
     {
         if (!CoinWallet.TrySpend(HintCost))
         {
             Debug.Log("[Hint] Không đủ coin.");
+            if (m_Toast != null) m_Toast.Show("Không đủ coin!");
             return;
         }
 

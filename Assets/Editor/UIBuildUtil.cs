@@ -178,6 +178,21 @@ namespace RingGameEditor
             return image;
         }
 
+        /// <summary>
+        /// Ảnh 9-slice (Image.Type.Sliced) tint theo màu — dùng với RoundedRectGenerator.Ensure() để
+        /// vẽ nền bo góc không bị bóp méo dù resize không đều tỉ lệ (khác AddImage là Type.Simple).
+        /// </summary>
+        public static Image AddSlicedImage(RectTransform rect, Sprite sprite, Color color, bool raycastTarget)
+        {
+            Image image = rect.gameObject.AddComponent<Image>();
+            image.sprite = sprite;
+            image.type = Image.Type.Sliced;
+            image.color = color;
+            image.raycastTarget = raycastTarget;
+
+            return image;
+        }
+
         public static Text AddText(RectTransform rect, Font font, string text, int size,
             TextAnchor alignment, Color color)
         {
@@ -221,7 +236,7 @@ namespace RingGameEditor
 
             RectTransform bg = NewUI("Background", rect);
             Stretch(bg);
-            AddImage(bg, background, false, false);
+            AddSlicedImage(bg, background, Color.white, false);
 
             RectTransform fillArea = NewUI("Fill Area", rect);
             Stretch(fillArea);
@@ -231,7 +246,7 @@ namespace RingGameEditor
             fillRect.pivot = new Vector2(0f, 0.5f);
             fillRect.offsetMin = Vector2.zero;
             fillRect.offsetMax = Vector2.zero;
-            AddImage(fillRect, fill, false, false);
+            AddSlicedImage(fillRect, fill, Color.white, false);
 
             RectTransform handleArea = NewUI("Handle Slide Area", rect);
             Stretch(handleArea);
@@ -260,7 +275,7 @@ namespace RingGameEditor
 
             RectTransform bg = NewUI("Background", rect);
             Stretch(bg);
-            Image bgImage = AddImage(bg, background, true, false);
+            Image bgImage = AddSlicedImage(bg, background, Color.white, true);
 
             RectTransform check = NewUI("Checkmark", bg);
             Stretch(check);
