@@ -71,7 +71,6 @@ public class GameManager : MonoBehaviour
         WinExplosion2.Play();
 
         GameComplete.SetActive(true);
-        Adcontrol.instance.ShowInterstitial();
     }
 
 
