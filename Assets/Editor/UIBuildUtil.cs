@@ -230,13 +230,16 @@ namespace RingGameEditor
         /// Dựng Slider thủ công (Background / Fill Area-Fill / Handle Slide Area-Handle) — Unity không
         /// có API runtime dựng sẵn cho việc này, item menu GameObject/UI/Slider chỉ có trong Editor nội bộ.
         /// </summary>
-        public static Slider AddSlider(RectTransform rect, Sprite background, Sprite fill, Sprite handle)
+        public static Slider AddSlider(RectTransform rect, Sprite background, Sprite fill, Sprite handle, float handleSize = 40f)
         {
             Slider slider = rect.gameObject.AddComponent<Slider>();
 
+            // Background raycastTarget=true => click/kéo bất kỳ đâu trên track đều hoạt động (không
+            // chỉ riêng Handle) — trước đây CẢ 3 ảnh đều raycastTarget=false nên Slider không nhận
+            // được pointer event nào, kéo không được dù nhìn thấy track/handle bình thường.
             RectTransform bg = NewUI("Background", rect);
             Stretch(bg);
-            AddSlicedImage(bg, background, Color.white, false);
+            AddSlicedImage(bg, background, Color.white, true);
 
             RectTransform fillArea = NewUI("Fill Area", rect);
             Stretch(fillArea);
@@ -254,8 +257,8 @@ namespace RingGameEditor
             handleRect.anchorMin = new Vector2(0f, 0.5f);
             handleRect.anchorMax = new Vector2(0f, 0.5f);
             handleRect.pivot = new Vector2(0.5f, 0.5f);
-            handleRect.sizeDelta = new Vector2(40f, 40f);
-            Image handleImage = AddImage(handleRect, handle, false, true);
+            handleRect.sizeDelta = new Vector2(handleSize, handleSize);
+            Image handleImage = AddImage(handleRect, handle, true, true);
 
             slider.direction = Slider.Direction.LeftToRight;
             slider.transition = Selectable.Transition.ColorTint;

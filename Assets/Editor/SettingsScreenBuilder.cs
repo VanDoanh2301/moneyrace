@@ -24,8 +24,9 @@ namespace RingGameEditor
         private const float HeaderHeight = 180f;
         private const float HeaderTop = 30f;
 
-        private const float RowTop = 280f;      // đỉnh hàng điều khiển đầu tiên, tính từ mép trên panel
-        private const float RowHeight = 140f;
+        private const float ControlsTopGap = 30f;   // khoảng cách từ đáy Header tới Controls
+        private const float ControlsBottom = 40f;   // lề dưới của Controls, tính từ đáy panel
+        private const float RowContentHeight = 420f; // chiều cao CỐ ĐỊNH của 1 hàng điều khiển (label+control)
         private const float RowSpacing = 40f;
 
         // Sprite fallback nằm ngoài Assets/Sprites/ (không resolve được qua UIBuildUtil.LoadSprite).
@@ -125,20 +126,46 @@ namespace RingGameEditor
                 new Vector2(36f * hScale, 0f), new Vector2(88f * vScale, 88f * vScale));
             Button backButton = U.IconButton(back, "iv_back");
 
+            // ---------- Controls: container co giãn lấp đầy phần còn lại dưới Header ----------
+            // Cùng kỹ thuật với ShopScreenBuilder: container stretch theo % panel (luôn đúng ở mọi
+            // tỉ lệ máy) thay vì tính vị trí cố định theo refRes.y (chiều cao KHAI BÁO, không phải
+            // chiều cao thật hiển thị) — tránh 2 hàng bị dồn lên trên, để trống mảng lớn phía dưới.
+
+            float controlsTopPx = (HeaderTop + HeaderHeight + ControlsTopGap) * vScale;
+            float controlsBottomPx = ControlsBottom * vScale;
+
+            RectTransform controls = U.NewUI("Controls", panel);
+            controls.anchorMin = new Vector2(0.5f, 0f);
+            controls.anchorMax = new Vector2(0.5f, 1f);
+            controls.pivot = new Vector2(0.5f, 0.5f);
+            controls.offsetMin = new Vector2(-contentWidth * 0.5f, controlsBottomPx);
+            controls.offsetMax = new Vector2(contentWidth * 0.5f, -controlsTopPx);
+
+            VerticalLayoutGroup controlsLayout = controls.gameObject.AddComponent<VerticalLayoutGroup>();
+            controlsLayout.spacing = RowSpacing * vScale;
+            controlsLayout.childAlignment = TextAnchor.UpperCenter;
+            controlsLayout.childControlWidth = true;
+            controlsLayout.childControlHeight = true;
+            controlsLayout.childForceExpandWidth = true;
+            controlsLayout.childForceExpandHeight = true;
+
+            float rowContentHeightPx = RowContentHeight * vScale;
+            Sprite roundedRect = RoundedRectGenerator.Ensure();
+
             // ---------- Hàng Volume: label + Slider ----------
 
-            RectTransform volumeRow = U.TopCenter("Volume Row", panel, RowTop * vScale, contentWidth, RowHeight * vScale);
+            RectTransform volumeSlot = BuildFlexSlot("Volume Row", controls, rowContentHeightPx);
+            RectTransform volumeContent = BuildCenteredContent(volumeSlot, contentWidth, rowContentHeightPx);
 
-            RectTransform volumeLabel = U.NewUI("Label", volumeRow);
-            U.Place(volumeLabel, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
-                Vector2.zero, new Vector2(300f * hScale, RowHeight * vScale));
-            U.AddText(volumeLabel, font, "VOLUME", Mathf.RoundToInt(44f * vScale), TextAnchor.MiddleLeft, Color.white);
+            RectTransform volumeLabel = U.NewUI("Label", volumeContent);
+            U.Place(volumeLabel, new Vector2(0f, 1f), new Vector2(0f, 1f),
+                Vector2.zero, new Vector2(contentWidth, 90f * vScale));
+            U.AddText(volumeLabel, font, "VOLUME", Mathf.RoundToInt(80f * vScale), TextAnchor.MiddleLeft, Color.white);
 
-            RectTransform volumeControl = U.NewUI("Control", volumeRow);
-            U.Place(volumeControl, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
-                Vector2.zero, new Vector2(contentWidth - 320f * hScale, 24f * vScale));
-            Sprite roundedRect = RoundedRectGenerator.Ensure();
-            Slider volumeSlider = U.AddSlider(volumeControl, roundedRect, roundedRect, handleSprite);
+            RectTransform volumeControl = U.NewUI("Control", volumeContent);
+            U.Place(volumeControl, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+                Vector2.zero, new Vector2(contentWidth, 90f * vScale));
+            Slider volumeSlider = U.AddSlider(volumeControl, roundedRect, roundedRect, handleSprite, 120f * vScale);
             volumeControl.Find("Background").GetComponent<Image>().color = TrackColor;
             volumeControl.Find("Fill Area/Fill").GetComponent<Image>().color = U.GoldText;
             volumeSlider.minValue = 0f;
@@ -148,17 +175,17 @@ namespace RingGameEditor
 
             // ---------- Hàng Mute: label + Toggle ----------
 
-            float muteRowTop = RowTop + RowHeight + RowSpacing;
-            RectTransform muteRow = U.TopCenter("Mute Row", panel, muteRowTop * vScale, contentWidth, RowHeight * vScale);
+            RectTransform muteSlot = BuildFlexSlot("Mute Row", controls, rowContentHeightPx);
+            RectTransform muteContent = BuildCenteredContent(muteSlot, contentWidth, rowContentHeightPx);
 
-            RectTransform muteLabel = U.NewUI("Label", muteRow);
+            RectTransform muteLabel = U.NewUI("Label", muteContent);
             U.Place(muteLabel, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
-                Vector2.zero, new Vector2(500f * hScale, RowHeight * vScale));
-            U.AddText(muteLabel, font, "MUTE SOUND", Mathf.RoundToInt(44f * vScale), TextAnchor.MiddleLeft, Color.white);
+                Vector2.zero, new Vector2(contentWidth - 220f * hScale, rowContentHeightPx));
+            U.AddText(muteLabel, font, "MUTE SOUND", Mathf.RoundToInt(80f * vScale), TextAnchor.MiddleLeft, Color.white);
 
-            RectTransform muteControl = U.NewUI("Control", muteRow);
+            RectTransform muteControl = U.NewUI("Control", muteContent);
             U.Place(muteControl, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
-                new Vector2(-20f * hScale, 0f), new Vector2(80f * vScale, 80f * vScale));
+                Vector2.zero, new Vector2(170f * vScale, 170f * vScale));
             Toggle muteToggle = U.AddToggle(muteControl, roundedRect, checkmarkSprite);
             muteControl.Find("Background").GetComponent<Image>().color = PanelBlue;
             muteToggle.isOn = SoundManager.Muted;
@@ -179,6 +206,32 @@ namespace RingGameEditor
             Debug.Log("[SettingsBuilder] Đã dựng Settings Screen.", settingsRoot.gameObject);
 
             return true;
+        }
+
+        /// <summary>Slot co giãn (LayoutElement) trong VerticalLayoutGroup — sàn = contentHeightPx, giãn thêm để lấp màn hình.</summary>
+        private static RectTransform BuildFlexSlot(string name, Transform parent, float minHeightPx)
+        {
+            RectTransform slot = U.NewUI(name, parent);
+            slot.sizeDelta = new Vector2(0f, minHeightPx);
+
+            LayoutElement element = slot.gameObject.AddComponent<LayoutElement>();
+            element.minHeight = minHeightPx;
+            element.flexibleHeight = 1f;
+
+            return slot;
+        }
+
+        /// <summary>Khối nội dung cao CỐ ĐỊNH, canh giữa trong slot đã giãn (không bị kéo to theo slot).</summary>
+        private static RectTransform BuildCenteredContent(RectTransform slot, float width, float heightPx)
+        {
+            RectTransform content = U.NewUI("Content", slot);
+            content.anchorMin = new Vector2(0.5f, 0.5f);
+            content.anchorMax = new Vector2(0.5f, 0.5f);
+            content.pivot = new Vector2(0.5f, 0.5f);
+            content.sizeDelta = new Vector2(width, heightPx);
+            content.anchoredPosition = Vector2.zero;
+
+            return content;
         }
     }
 }

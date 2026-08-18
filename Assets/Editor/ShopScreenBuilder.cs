@@ -31,8 +31,12 @@ namespace RingGameEditor
         private const float CoinsPillWidth = 420f;
         private const float ScrollTop = 400f;               // tính từ mép trên panel
         private const float ScrollBottom = 50f;
-        private const float RowHeight = 200f;
-        private const float RowSpacing = 18f;
+
+        // Card hiển thị (nền xanh bo góc + nội dung) kích thước CỐ ĐỊNH, canh giữa trong "slot" co
+        // giãn — slot giãn lấp đầy màn hình thật, phần dư trong slot trở thành khoảng cách giữa các
+        // card thay vì kéo card to hết cỡ (to quá trông trống trải).
+        private const float CardHeight = 350f;
+        private const float RowSpacing = 14f;
         private const int RowPadding = 20;
 
         /// <summary>Đặt false nếu ảnh header đã in sẵn chữ tiêu đề.</summary>
@@ -221,11 +225,11 @@ namespace RingGameEditor
 
             // ---------- 7 hàng gói coin ----------
 
-            float rowHeightPx = RowHeight * vScale;
+            float cardHeightPx = CardHeight * vScale;
 
             for (int i = 0; i < Packs.Length; i++)
             {
-                BuildPackRow(content, font, Packs[i], i + 1, shopScreen, rowHeightPx, hScale, vScale);
+                BuildPackRow(content, font, Packs[i], i + 1, shopScreen, cardHeightPx, hScale, vScale);
             }
 
             // ---------- Nối serialized field + sự kiện ----------
@@ -238,7 +242,7 @@ namespace RingGameEditor
             panel.gameObject.SetActive(false);
             shopRoot.SetAsLastSibling();
 
-            float contentHeight = Packs.Length * rowHeightPx + (Packs.Length - 1) * rowSpacingPx + rowPaddingPx * 2f;
+            float contentHeight = Packs.Length * cardHeightPx + (Packs.Length - 1) * rowSpacingPx + rowPaddingPx * 2f;
             Debug.Log(string.Format(
                 "[ShopBuilder] Đã dựng Shop Screen: {0} gói, canvas ref {1}x{2} (danh nghĩa), content {3:0}px, scroll view co giãn lấp đầy phần còn lại của màn hình thật.",
                 Packs.Length, refRes.x, refRes.y, contentHeight), shopRoot.gameObject);
@@ -247,38 +251,48 @@ namespace RingGameEditor
         }
 
         private static void BuildPackRow(RectTransform parent, Font font, Pack pack, int index, ShopScreen shopScreen,
-            float rowHeightPx, float hScale, float vScale)
+            float cardHeightPx, float hScale, float vScale)
         {
+            // "Inapp{index}" = slot co giãn (LayoutElement), không có hình — chỉ để VerticalLayoutGroup
+            // chia đều khoảng trống dư. "Card" bên trong mới là khối hiển thị, cao CỐ ĐỊNH, canh giữa
+            // theo chiều dọc trong slot — phần dư trên/dưới Card chính là khoảng cách với card kế bên.
             RectTransform row = U.NewUI("Inapp" + index, parent);
-            row.sizeDelta = new Vector2(0f, rowHeightPx);
-            U.AddSlicedImage(row, RoundedRectGenerator.Ensure(), PanelBlue, true);
+            row.sizeDelta = new Vector2(0f, cardHeightPx);
 
             LayoutElement element = row.gameObject.AddComponent<LayoutElement>();
-            element.minHeight = rowHeightPx;
-            element.preferredHeight = rowHeightPx;
-            // flexibleHeight cho phép hàng giãn thêm để 7 hàng cùng chia đều khoảng trống dư ra khi
-            // màn hình thật cao hơn tham chiếu — nội dung bên trong (icon/chữ) vẫn giữ nguyên size,
-            // chỉ căn giữa theo chiều dọc trong hàng đã giãn.
-            element.flexibleHeight = 1f;
+            element.minHeight = cardHeightPx;
+            element.preferredHeight = cardHeightPx;
+            // flexibleHeight=0: slot khớp đúng chiều cao Card, khoảng cách giữa các item chỉ còn
+            // RowSpacing (không giãn slot to thêm nữa — trước đó gây khoảng trống lớn giữa các card).
+            element.flexibleHeight = 0f;
 
-            // Bố cục ngang trong hàng (x/width theo hScale, y/height theo vScale):
-            //   Gold 30..180 | Title 210..550 | Price 570..750 | Buy 766..934
+            RectTransform card = U.NewUI("Card", row);
+            card.anchorMin = new Vector2(0f, 0.5f);
+            card.anchorMax = new Vector2(1f, 0.5f);
+            card.pivot = new Vector2(0.5f, 0.5f);
+            card.sizeDelta = new Vector2(0f, cardHeightPx);
+            card.anchoredPosition = Vector2.zero;
+            U.AddSlicedImage(card, RoundedRectGenerator.Ensure(), PanelBlue, true);
 
-            RectTransform gold = U.NewUI("Gold", row);
+            // Bố cục ngang trong card (x theo hScale — tỉ lệ với bề rộng thật của card).
+            // Kích thước Gold/font Title-Price/Buy là số TUYỆT ĐỐI (không nhân hScale/vScale) theo
+            // yêu cầu cụ thể: Gold 70x70, font Title/TextIap 28, Buy 140x56.
+
+            RectTransform gold = U.NewUI("Gold", card);
             U.Place(gold, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
-                new Vector2(30f * hScale, 0f), new Vector2(150f * vScale, 150f * vScale));
+                new Vector2(30f * hScale, 0f), new Vector2(70f, 70f));
             U.AddImage(gold, pack.GoldSprite, false, true);
 
-            RectTransform title = U.NewUI("Title", row);
+            RectTransform title = U.NewUI("Title", card);
             U.Place(title, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
-                new Vector2(210f * hScale, 0f), new Vector2(340f * hScale, 90f * vScale));
-            U.AddText(title, font, pack.Coins + " Coins", Mathf.RoundToInt(50f * vScale), TextAnchor.MiddleLeft, Color.white);
+                new Vector2(190f * hScale, 0f), new Vector2(330f * hScale, 50f));
+            U.AddText(title, font, pack.Coins + " Coins", 28, TextAnchor.MiddleLeft, Color.white);
 
             // Giá: Text + Button + IAPButton (giá tự cập nhật sau khi IAP init)
-            RectTransform priceRect = U.NewUI("TextIap", row);
+            RectTransform priceRect = U.NewUI("TextIap", card);
             U.Place(priceRect, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
-                new Vector2(-210f * hScale, 0f), new Vector2(180f * hScale, 80f * vScale));
-            Text priceLabel = U.AddText(priceRect, font, pack.PricePlaceholder, Mathf.RoundToInt(42f * vScale),
+                new Vector2(-230f * hScale, 0f), new Vector2(190f * hScale, 50f));
+            Text priceLabel = U.AddText(priceRect, font, pack.PricePlaceholder, 28,
                 TextAnchor.MiddleRight, U.GoldText);
             priceLabel.raycastTarget = true;
             U.AddButton(priceRect, priceLabel);
@@ -287,10 +301,10 @@ namespace RingGameEditor
             iapButton.productId = pack.ProductId;
             iapButton.priceText = priceLabel;
 
-            // Nút Buy (iv_buy 270x144 => giữ tỉ lệ, preserveAspect=true tự canh giữa trong rect)
-            RectTransform buy = U.NewUI("Buy", row);
+            // Nút Buy (iv_buy giữ tỉ lệ, preserveAspect=true tự canh giữa trong rect)
+            RectTransform buy = U.NewUI("Buy", card);
             U.Place(buy, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
-                new Vector2(-26f * hScale, 0f), new Vector2(168f * hScale, 90f * vScale));
+                new Vector2(-30f * hScale, 0f), new Vector2(140f, 56f));
             Button buyButton = U.IconButton(buy, "iv_buy");
 
             UnityAction buyAction = GetBuyAction(shopScreen, index);
