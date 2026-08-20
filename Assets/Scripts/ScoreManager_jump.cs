@@ -48,6 +48,7 @@ public class ScoreManager_jump : MonoBehaviour
     public void UpdateScoreGameover()
     {
         UpdateHighScore();
+        CoinWallet.Add(currentScore);
 
         currentScoreGameOverLabel.text = currentScore.ToString();
         highScoreGameOverLabel.text = highScore.ToString();
