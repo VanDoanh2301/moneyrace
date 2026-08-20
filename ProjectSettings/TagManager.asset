@@ -3,7 +3,8 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 3
-  tags: []
+  tags:
+  - Obstacle
   layers:
   - Default
   - TransparentFX
@@ -13,7 +14,7 @@ TagManager:
   - UI
   - 
   - 
-  - 
+  - PostProcessing
   - 
   - 
   - 
@@ -38,8 +39,18 @@ TagManager:
   - 
   - 
   m_SortingLayers:
+  - name: Background
+    uniqueID: 1721000001
+    locked: 0
+  - name: Grid
+    uniqueID: 1721000002
+    locked: 0
+  - name: Decorative
+    uniqueID: 1721000003
+    locked: 0
   - name: Default
     uniqueID: 0
     locked: 0
   m_RenderingLayers:
   - Default
+  m_MigratedRenderPipelines: []

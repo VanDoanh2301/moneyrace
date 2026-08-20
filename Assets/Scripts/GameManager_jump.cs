@@ -19,7 +19,7 @@ public class GameManager_jump : MonoBehaviour
     [Space(5)]
     public float maxYObstaclePosition = 2f;
     [Space(5)]
-    public Color[] obstacleColors;
+    public NeonColorPair[] obstacleColors;
 
     readonly float xDistanceBetweenObstacles = 2.5f; //fixed because of first jump, if you change this then you need to change jump force too
     GameObject lastObstacle;
@@ -82,7 +82,7 @@ public class GameManager_jump : MonoBehaviour
         //first obstacle
         lastObstacle = Instantiate(obstaclePrefab);
         lastObstacle.transform.position = new Vector2(-1.5f, -1.5f);
-        lastObstacle.GetComponent<SpriteRenderer>().color = GetRandomColor();
+        AssignRandomNeonColor(lastObstacle);
         lastObstacle.GetComponent<Obstacle>().index = obstacleIndex;
 
         //player on the first obstacle
@@ -98,7 +98,7 @@ public class GameManager_jump : MonoBehaviour
         //second obstacle
         lastObstacle = Instantiate(obstaclePrefab);
         lastObstacle.transform.position = new Vector2(1f, -.5f);
-        lastObstacle.GetComponent<SpriteRenderer>().color = GetRandomColor();
+        AssignRandomNeonColor(lastObstacle);
         lastObstacle.GetComponent<Obstacle>().index = obstacleIndex;
 
         //third obstacle
@@ -124,7 +124,7 @@ public class GameManager_jump : MonoBehaviour
         //create obstacle
         newObstacle = Instantiate(obstaclePrefab);
         newObstacle.transform.position = new Vector2(lastObstacle.transform.position.x + xDistanceBetweenObstacles, newObstacleY);
-        newObstacle.GetComponent<SpriteRenderer>().color = GetRandomColor();
+        AssignRandomNeonColor(newObstacle);
         newObstacle.GetComponent<Obstacle>().index = obstacleIndex;
         lastObstacle = newObstacle;
     }
@@ -164,9 +164,12 @@ public class GameManager_jump : MonoBehaviour
         perfectAnimator.Play("Show");
     }
 
-    Color GetRandomColor()
+    NeonColorPair AssignRandomNeonColor(GameObject obstacle)
     {
-        return obstacleColors[Random.Range(0, obstacleColors.Length)];
+        NeonColorPair pair = obstacleColors[Random.Range(0, obstacleColors.Length)];
+        obstacle.GetComponent<Obstacle>().colorPair = pair;
+        NeonColor.Apply(obstacle.GetComponent<SpriteRenderer>(), pair);
+        return pair;
     }
 
     //show game over gui

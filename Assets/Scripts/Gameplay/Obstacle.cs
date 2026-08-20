@@ -4,6 +4,7 @@ public class Obstacle : MonoBehaviour
 {
     public int index;
     public bool hit;
+    public NeonColorPair colorPair;
 
     void OnBecameInvisible()
     {

@@ -3,7 +3,23 @@
 public class Player_jump : MonoBehaviour
 {
     public SpriteRenderer spriteRenderer;
-    public Material trailMaterial;
+    TrailRenderer trailRenderer;
+
+    void Awake()
+    {
+        trailRenderer = GetComponent<TrailRenderer>();
+    }
+
+    void ApplyNeonColor(NeonColorPair pair)
+    {
+        NeonColor.Apply(spriteRenderer, pair);
+
+        //trailRenderer.material auto-instances a per-instance copy, safe to mutate unlike the serialized asset reference
+        Material trailInstance = trailRenderer.material;
+        trailInstance.color = pair.top;
+        trailInstance.EnableKeyword("_EMISSION");
+        trailInstance.SetColor("_EmissionColor", pair.top * 1.5f);
+    }
 
     private void OnBecameInvisible()
     {
@@ -29,8 +45,7 @@ public class Player_jump : MonoBehaviour
             //dont play hit sound on first obstacle
             if (collision.gameObject.GetComponent<Obstacle>().index == 0)
             {
-                trailMaterial.color = collision.gameObject.GetComponent<SpriteRenderer>().color;
-                spriteRenderer.color = collision.gameObject.GetComponent<SpriteRenderer>().color;
+                ApplyNeonColor(collision.gameObject.GetComponent<Obstacle>().colorPair);
                 return;
             }
 
@@ -66,8 +81,7 @@ public class Player_jump : MonoBehaviour
                 tempRigidbody2D.bodyType = RigidbodyType2D.Dynamic;
                 tempRigidbody2D.gravityScale = 3f;
                 tempRigidbody2D.constraints = RigidbodyConstraints2D.FreezePositionX | RigidbodyConstraints2D.FreezeRotation;
-                spriteRenderer.color = collision.gameObject.GetComponent<SpriteRenderer>().color;
-                trailMaterial.color = collision.gameObject.GetComponent<SpriteRenderer>().color;
+                ApplyNeonColor(collision.gameObject.GetComponent<Obstacle>().colorPair);
             }
         }
     }
