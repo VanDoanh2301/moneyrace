@@ -56,7 +56,7 @@ public class GameManager_jump : MonoBehaviour
         {
             if (Input.GetMouseButtonDown(0))
             {
-                if (uIManager.IsButton())
+                if (uIManager.IsPointerOverUI())
                     return;
 
                 if (!inAir)

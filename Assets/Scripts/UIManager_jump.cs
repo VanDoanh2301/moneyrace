@@ -1,7 +1,5 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 
 public class UIManager_jump : MonoBehaviour {
@@ -28,7 +26,7 @@ public class UIManager_jump : MonoBehaviour {
     {
 		if (Input.GetMouseButtonDown(0) && gameState == GameState_jump.MENU && !clicked)
 		{
-			if (IsButton())
+			if (IsPointerOverUI())
 				return;
 
 			AudioManager_jump.Instance.PlayEffects(AudioManager_jump.Instance.buttonClick);
@@ -89,24 +87,21 @@ public class UIManager_jump : MonoBehaviour {
 		AudioManager_jump.Instance.PlayMusic(AudioManager_jump.Instance.menuMusic);
 	}
 
-	//check if user click any menu button
-	public bool IsButton()
+	//check if pointer is over any UI element that blocks raycasts (buttons, panels, Shop screen...)
+	//dùng IsPointerOverGameObject thay vì raycast + check riêng Button, vì check theo Button
+	//sẽ bỏ lọt các UI không phải Button (vd: nền panel Shop, ScrollView) => input vẫn lọt xuống gameplay phía sau.
+	public bool IsPointerOverUI()
 	{
-		bool temp = false;
+		if (EventSystem.current == null) return false;
 
-		PointerEventData eventData = new PointerEventData(EventSystem.current)
+		// Trên cảm ứng thật, bản IsPointerOverGameObject() không tham số chỉ check pointer id -1 (chuột ảo),
+		// không khớp fingerId thật của ngón tay => luôn trả false dù đang chạm đúng UI (Shop Button...),
+		// khiến tap lọt xuống thành bắt đầu game thay vì mở Shop. Phải truyền đúng fingerId khi có touch.
+		if (Input.touchCount > 0)
 		{
-			position = Input.mousePosition
-		};
-
-		List<RaycastResult> results = new List<RaycastResult>();
-		EventSystem.current.RaycastAll(eventData, results);
-
-		foreach (RaycastResult item in results)
-		{
-			temp |= item.gameObject.GetComponent<Button>() != null;
+			return EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId);
 		}
 
-		return temp;
+		return EventSystem.current.IsPointerOverGameObject();
 	}
 }

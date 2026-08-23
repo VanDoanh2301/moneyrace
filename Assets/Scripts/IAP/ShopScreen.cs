@@ -20,6 +20,9 @@ public class ShopScreen : MonoBehaviour
 
     private string m_CoinsTextFormat;
 
+    // true nếu chính Shop là bên đã set Time.timeScale = 0 (đang PLAYING lúc mở Shop) => phải tự resume khi đóng.
+    private bool m_PausedGameplay;
+
     public bool IsOpened
     {
         get { return m_ShopPanel != null && m_ShopPanel.activeSelf; }
@@ -47,6 +50,17 @@ public class ShopScreen : MonoBehaviour
         if (m_ShopPanel != null) m_ShopPanel.SetActive(true);
         if (m_ShopButton != null) m_ShopButton.SetActive(false);
 
+        // Đang chơi mà mở Shop => tạm dừng gameplay (vật lý, spawn obstacle...) phía sau, giống Pause menu,
+        // để thao tác trong Shop không ảnh hưởng gì tới ván chơi. Không đụng gameState/PAUSED của UIManager.
+        if (Time.timeScale != 0f
+            && GameManager_jump.Instance != null
+            && GameManager_jump.Instance.uIManager != null
+            && GameManager_jump.Instance.uIManager.gameState == GameState_jump.PLAYING)
+        {
+            Time.timeScale = 0f;
+            m_PausedGameplay = true;
+        }
+
         RefreshCoins();
     }
 
@@ -61,6 +75,12 @@ public class ShopScreen : MonoBehaviour
     {
         if (m_ShopPanel != null) m_ShopPanel.SetActive(false);
         if (m_ShopButton != null) m_ShopButton.SetActive(true);
+
+        if (m_PausedGameplay)
+        {
+            Time.timeScale = 1f;
+            m_PausedGameplay = false;
+        }
     }
 
     public void ToggleShopScreen()

@@ -33,8 +33,10 @@ public class IAPManager : MonoBehaviour, IDetailedStoreListener
 
     [Header("Loại sản phẩm")]
     [Tooltip("false = NonConsumable (sản phẩm 'tính phí một lần', mỗi tài khoản chỉ mua được 1 lần).\n" +
-             "true = Consumable (mua lại nhiều lần) – CHỈ bật khi đã đổi loại sản phẩm tương ứng trên Google Play Console.")]
-    public bool coinPacksAreConsumable = false;
+             "true = Consumable (mua lại nhiều lần) – Google Play không có khái niệm consumable/non-consumable " +
+             "ở Play Console, việc cho mua lại được quyết định hoàn toàn bởi client (Unity IAP tự consume " +
+             "giao dịch khi ProcessPurchase trả về Complete với ProductType.Consumable).")]
+    public bool coinPacksAreConsumable = true;
 
     [Header("Optional UI - hiển thị số coin sau khi mua / init")]
     [Tooltip("Hiển thị số coin hiện tại (vd: Coins: 500).")]
@@ -168,6 +170,7 @@ public class IAPManager : MonoBehaviour, IDetailedStoreListener
         if (coins > 0)
         {
             CoinWallet.Add(coins, true); // giao dịch tiền thật => ghi xuống đĩa ngay
+            ScoreManager_jump.AddHighScore(coins); // mua coin cũng cập nhật vào điểm (HighScore)
             UpdateUICoins();
         }
 
