@@ -30,8 +30,6 @@ public static class ShopScreenBuilder
     private const float RowHeight = 170f;
     private const float RowSpacing = 14f;
     private const int RowPadding = 16;
-
-    private const string HeaderSprite = "bg_button_iap";
     private const bool ShowHeaderTitle = true;
 
     private struct Pack
@@ -97,9 +95,21 @@ public static class ShopScreenBuilder
         }
 
         if (!U.EnsureSprites("Build Shop Screen",
-                "bg_iap", "bg_button_iap", "iv_buy", "iv_back", "iv_money",
-                "iv_gold1", "iv_gold2", "iv_gold3", "iv_gold4", "iv_gold5", HeaderSprite))
+                "iv_buy", "iv_back", "iv_money",
+                "iv_gold1", "iv_gold2", "iv_gold3", "iv_gold4", "iv_gold5"))
         {
+            return false;
+        }
+
+        if (U.LoadSpriteAt(U.ShopBackgroundPath) == null)
+        {
+            EditorUtility.DisplayDialog("Build Shop Screen", "Thiếu nền: " + U.ShopBackgroundPath, "OK");
+            return false;
+        }
+
+        if (U.LoadSpriteAt(U.CapsuleSpritePath) == null)
+        {
+            EditorUtility.DisplayDialog("Build Shop Screen", "Thiếu capsule: " + U.CapsuleSpritePath, "OK");
             return false;
         }
 
@@ -170,32 +180,41 @@ public static class ShopScreenBuilder
 
         RectTransform panelRt = U.NewUI("Shop Panel", shopRoot);
         U.Stretch(panelRt);
-        U.AddImage(panelRt, "bg_iap", true, false);
+        // Nền Shop = image 96
+        Image panelBg = U.AddImageFromPath(panelRt, U.ShopBackgroundPath, true, false);
+        panelBg.type = Image.Type.Simple;
+        panelBg.preserveAspect = false;
+        panelBg.color = Color.white;
 
+        // Header / Coins pill: capsule + viền trắng (giống ShopButton)
         RectTransform header = U.TopCenter("Header", panelRt, HeaderTop, contentWidth, HeaderHeight);
-        U.AddImage(header, HeaderSprite, false, false);
+        U.StyleCapsuleRow(header, new Color(0.15f, 0.45f, 0.95f, 0.92f), 8f);
 
         if (ShowHeaderTitle)
         {
             RectTransform headerTitle = U.NewUI("Title", header);
             U.Stretch(headerTitle);
             U.AddText(headerTitle, font, "SHOP", 60f, TextAnchor.MiddleCenter, Color.white);
+            headerTitle.SetAsLastSibling();
         }
 
         RectTransform back = U.NewUI("Back", header);
         U.Place(back, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(28f, 0f), new Vector2(72f, 72f));
         Button backButton = U.IconButton(back, "iv_back");
+        back.SetAsLastSibling();
 
         RectTransform coinsPill = U.TopCenter("Coins Pill", panelRt, CoinsPillTop, 380f, CoinsPillHeight);
-        U.AddImage(coinsPill, "bg_button_iap", false, false);
+        U.StyleCapsuleRow(coinsPill, new Color(1f, 0.55f, 0.12f, 0.95f), 7f);
 
         RectTransform coinsIcon = U.NewUI("Icon", coinsPill);
         U.Place(coinsIcon, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(32f, 0f), new Vector2(56f, 56f));
         U.AddImage(coinsIcon, "iv_money", false, true);
+        coinsIcon.SetAsLastSibling();
 
         RectTransform coinsValue = U.NewUI("Value", coinsPill);
         U.Place(coinsValue, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(100f, 0f), new Vector2(240f, 64f));
-        Text coinsLabelText = U.AddText(coinsValue, font, "{0}", 42f, TextAnchor.MiddleLeft, U.GoldText);
+        Text coinsLabelText = U.AddText(coinsValue, font, "{0}", 42f, TextAnchor.MiddleLeft, Color.white);
+        coinsValue.SetAsLastSibling();
 
         float scrollHeight = U.RefHeight - ScrollTop - ScrollBottom;
         float scrollCenterFromBottom = U.RefHeight - ScrollTop - scrollHeight * 0.5f;
@@ -263,31 +282,47 @@ public static class ShopScreenBuilder
         return true;
     }
 
+    // Màu fill các hàng IAP — tông Fruit Race, viền trắng bên ngoài
+    private static readonly Color[] PackRowColors =
+    {
+        new Color(1.00f, 0.45f, 0.15f, 0.95f), // cam
+        new Color(0.20f, 0.75f, 0.35f, 0.95f), // xanh lá
+        new Color(0.20f, 0.55f, 1.00f, 0.95f), // xanh dương
+        new Color(0.85f, 0.30f, 0.85f, 0.95f), // tím hồng
+        new Color(1.00f, 0.75f, 0.10f, 0.95f), // vàng
+        new Color(0.15f, 0.80f, 0.85f, 0.95f), // cyan
+        new Color(1.00f, 0.25f, 0.45f, 0.95f), // hồng đỏ
+    };
+
     private static void BuildPackRow(RectTransform parent, Font font, Pack pack, int index, ShopScreen shopScreen)
     {
         RectTransform row = U.NewUI("Inapp" + index, parent);
         row.sizeDelta = new Vector2(0f, RowHeight);
-        U.AddImage(row, "bg_button_iap", true, false);
+
+        Color fill = PackRowColors[(index - 1) % PackRowColors.Length];
+        U.StyleCapsuleRow(row, fill, 8f);
 
         LayoutElement element = row.gameObject.AddComponent<LayoutElement>();
         element.minHeight = RowHeight;
         element.preferredHeight = RowHeight;
 
-        // Scale layout từ bản 960 xuống ~1000 width content
         RectTransform gold = U.NewUI("Gold", row);
         U.Place(gold, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(24f, 0f), new Vector2(120f, 120f));
         U.AddImage(gold, pack.GoldSprite, false, true);
+        gold.SetAsLastSibling();
 
         RectTransform title = U.NewUI("Title", row);
         U.Place(title, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(160f, 0f), new Vector2(280f, 70f));
         U.AddText(title, font, pack.Coins + " Coins", 40f, TextAnchor.MiddleLeft, Color.white);
+        title.SetAsLastSibling();
 
         RectTransform priceRect = U.NewUI("TextIap", row);
         U.Place(priceRect, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-170f, 0f), new Vector2(150f, 70f));
         Text priceLabel = U.AddText(priceRect, font, pack.PricePlaceholder, 36f,
-            TextAnchor.MiddleRight, U.GoldText);
+            TextAnchor.MiddleRight, new Color(1f, 0.95f, 0.4f, 1f));
         priceLabel.raycastTarget = true;
         U.AddButton(priceRect, priceLabel);
+        priceRect.SetAsLastSibling();
 
         IAPButton iapButton = priceRect.gameObject.AddComponent<IAPButton>();
         iapButton.productId = pack.ProductId;
@@ -296,6 +331,7 @@ public static class ShopScreenBuilder
         RectTransform buy = U.NewUI("Buy", row);
         U.Place(buy, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-18f, 0f), new Vector2(140f, 74f));
         Button buyButton = U.IconButton(buy, "iv_buy");
+        buy.SetAsLastSibling();
 
         UnityAction buyAction = GetBuyAction(shopScreen, index);
         if (buyAction != null)

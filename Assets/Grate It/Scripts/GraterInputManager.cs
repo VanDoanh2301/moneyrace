@@ -19,7 +19,8 @@ public class GraterInputManager : MonoBehaviour
     {
         if (Input.GetMouseButtonDown(0))
         {
-            grateranimation.SetTrigger("MouseDown");            
+            UISound.PlayTap();
+            grateranimation.SetTrigger("MouseDown");
         }
 
         if (Input.GetMouseButtonUp(0))

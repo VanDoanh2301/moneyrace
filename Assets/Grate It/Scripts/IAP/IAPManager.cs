@@ -229,6 +229,8 @@ public class IAPManager : MonoBehaviour, IDetailedStoreListener
     /// <summary>Gọi mua theo product ID.</summary>
     public void BuyProduct(string productId)
     {
+        UISound.PlayClick();
+
         if (!_isInitialized || _storeController == null)
         {
             Debug.LogWarning("[IAP] Chưa khởi tạo. Đợi hoặc kiểm tra kết nối.");

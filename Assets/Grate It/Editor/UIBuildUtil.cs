@@ -9,6 +9,15 @@ public static class UIBuildUtil
 {
     public const string SpriteFolder = "Assets/Grate It/UI/IAP/";
 
+    /// <summary>Nền Shop Screen — image 96 (sunburst gradient).</summary>
+    public const string ShopBackgroundPath = "Assets/Grate It/Textures/image 96.png";
+
+    /// <summary>Sprite bo góc dùng cho hàng item (radius 12, viền trắng).</summary>
+    public const string CapsuleSpritePath = "Assets/Grate It/UI/IAP/ShopItemBg.png";
+
+    /// <summary>Sprite bo góc mạnh (capsule) — nút Shop Main Menu.</summary>
+    public const string ShopButtonCapsulePath = "Assets/Grate It/UI/TITLE PAGE/ShopButtonBg.png";
+
     public const string CanvasName = "Canvas";
 
     /// <summary>Canvas tham chiếu Main Menu: ScaleWithScreenSize 1080x1920.</summary>
@@ -33,6 +42,103 @@ public static class UIBuildUtil
     public static Sprite LoadSprite(string name)
     {
         return AssetDatabase.LoadAssetAtPath<Sprite>(SpriteFolder + name + ".png");
+    }
+
+    public static Sprite LoadSpriteAt(string assetPath)
+    {
+        var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(assetPath);
+        if (sprite != null) return sprite;
+
+        // Texture chưa import đúng kiểu Sprite → sửa rồi load lại
+        var importer = AssetImporter.GetAtPath(assetPath) as TextureImporter;
+        if (importer == null) return null;
+
+        importer.textureType = TextureImporterType.Sprite;
+        importer.spriteImportMode = SpriteImportMode.Single;
+        importer.alphaIsTransparency = true;
+        importer.mipmapEnabled = false;
+        importer.SaveAndReimport();
+
+        return AssetDatabase.LoadAssetAtPath<Sprite>(assetPath);
+    }
+
+    public static Image AddImageFromPath(RectTransform rect, string assetPath, bool raycastTarget, bool preserveAspect)
+    {
+        Image image = rect.gameObject.AddComponent<Image>();
+        image.sprite = LoadSpriteAt(assetPath);
+        image.type = Image.Type.Simple;
+        image.preserveAspect = preserveAspect;
+        image.raycastTarget = raycastTarget;
+        image.color = Color.white;
+
+        return image;
+    }
+
+    /// <summary>
+    /// Hàng item kiểu ShopButton: Border trắng full + Fill màu inset (capsule).
+    /// </summary>
+    public static void StyleCapsuleRow(RectTransform row, Color fillColor, float borderInset = 8f)
+    {
+        Sprite capsule = LoadSpriteAt(CapsuleSpritePath);
+        if (capsule == null)
+        {
+            Debug.LogWarning("[UIBuild] Thiếu capsule sprite: " + CapsuleSpritePath);
+            return;
+        }
+
+        bool sliced = capsule.border != Vector4.zero;
+        Image.Type imgType = sliced ? Image.Type.Sliced : Image.Type.Simple;
+
+        // Root image gần như trong suốt (chỉ raycast nếu cần)
+        Image rootImg = row.GetComponent<Image>();
+        if (rootImg == null) rootImg = row.gameObject.AddComponent<Image>();
+        rootImg.sprite = capsule;
+        rootImg.type = imgType;
+        rootImg.useSpriteMesh = !sliced;
+        rootImg.color = new Color(1f, 1f, 1f, 0.01f);
+        rootImg.raycastTarget = true;
+
+        Transform borderT = row.Find("Border");
+        GameObject borderGO = borderT != null ? borderT.gameObject : null;
+        if (borderGO == null)
+        {
+            borderGO = new GameObject("Border", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            borderGO.layer = row.gameObject.layer;
+            borderGO.transform.SetParent(row, false);
+            borderGO.transform.SetAsFirstSibling();
+        }
+
+        RectTransform borderRt = borderGO.GetComponent<RectTransform>();
+        Stretch(borderRt);
+        Image borderImg = borderGO.GetComponent<Image>();
+        borderImg.sprite = capsule;
+        borderImg.type = imgType;
+        borderImg.useSpriteMesh = !sliced;
+        borderImg.color = Color.white;
+        borderImg.raycastTarget = false;
+
+        Transform fillT = row.Find("Fill");
+        GameObject fillGO = fillT != null ? fillT.gameObject : null;
+        if (fillGO == null)
+        {
+            fillGO = new GameObject("Fill", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            fillGO.layer = row.gameObject.layer;
+            fillGO.transform.SetParent(row, false);
+            fillGO.transform.SetSiblingIndex(1);
+        }
+
+        RectTransform fillRt = fillGO.GetComponent<RectTransform>();
+        fillRt.anchorMin = Vector2.zero;
+        fillRt.anchorMax = Vector2.one;
+        fillRt.pivot = new Vector2(0.5f, 0.5f);
+        fillRt.offsetMin = new Vector2(borderInset, borderInset);
+        fillRt.offsetMax = new Vector2(-borderInset, -borderInset);
+        Image fillImg = fillGO.GetComponent<Image>();
+        fillImg.sprite = capsule;
+        fillImg.type = imgType;
+        fillImg.useSpriteMesh = !sliced;
+        fillImg.color = fillColor;
+        fillImg.raycastTarget = false;
     }
 
     public static bool EnsureSprites(string dialogTitle, params string[] names)

@@ -155,11 +155,13 @@ public class GraterGameManager : MonoBehaviour
 
     public void RestartButton()
     {
+        UISound.PlayClick();
         Time.timeScale = 1f;
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
     public void NextButton()
     {
+        UISound.PlayClick();
         Time.timeScale = 1f;
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
     }
@@ -175,6 +177,7 @@ public class GraterGameManager : MonoBehaviour
 
     public void Home()
     {
+        UISound.PlayClick();
         Time.timeScale = 1f;
         SceneManager.LoadScene(0);
     }
@@ -416,7 +419,8 @@ public class GraterGameManager : MonoBehaviour
     public void TogglePause()
     {
         if (_pausePanel == null) return;
-        if (_isPaused) ResumeGame();
+        UISound.PlayClick();
+        if (_isPaused) ResumeGameSilently();
         else PauseGame();
     }
 
@@ -429,6 +433,12 @@ public class GraterGameManager : MonoBehaviour
     }
 
     public void ResumeGame()
+    {
+        UISound.PlayClick();
+        ResumeGameSilently();
+    }
+
+    private void ResumeGameSilently()
     {
         if (_pausePanel == null) return;
         _pausePanel.SetActive(false);

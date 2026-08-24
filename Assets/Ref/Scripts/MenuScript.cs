@@ -23,18 +23,21 @@ public class MenuScript : MonoBehaviour
 
     public void singlePlayer()
     {
+        UISound.PlayClick();
         mul = 0;
         SceneManager.LoadScene(PlayerPrefs.GetString("level", "1"));
     }
 
     public void MultiPlayer()
     {
+        UISound.PlayClick();
         mul = 1;
         SceneManager.LoadScene(PlayerPrefs.GetString("level", "1"));
     }
 
     public void PrivacyPolicy()
     {
+        UISound.PlayClick();
         Application.OpenURL("https://unconditionalgames.s3.ap-south-1.amazonaws.com/UnConditionalPrivacyPolicy.txt");
     }
 

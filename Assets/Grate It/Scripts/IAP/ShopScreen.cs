@@ -18,12 +18,6 @@ public class ShopScreen : MonoBehaviour
     [SerializeField]
     private Text m_CoinsText;
 
-    [Header("Optional - âm thanh khi bấm nút")]
-    [SerializeField]
-    private AudioSource m_AudioSource;
-    [SerializeField]
-    private AudioClip m_ButtonClickSound;
-
     private string m_CoinsTextFormat;
 
     // true nếu chính Shop là bên đã set Time.timeScale = 0 (đang chơi lúc mở Shop) => phải tự resume khi đóng.
@@ -142,7 +136,6 @@ public class ShopScreen : MonoBehaviour
 
     private void PlayButtonSound()
     {
-        if (m_AudioSource != null && m_ButtonClickSound != null)
-            m_AudioSource.PlayOneShot(m_ButtonClickSound);
+        UISound.PlayClick();
     }
 }
