@@ -12,7 +12,9 @@ public class IAPManager : MonoBehaviour, IDetailedStoreListener
     [Header("Local validation (receipt) – bật nếu dùng CrossPlatformValidator")]
     public bool isLocalValidation;
 
-
+    [Header("Purchase Settings")]
+    [Tooltip("Bật true: gói coin có thể mua lại nhiều lần (Consumable). Tắt: mỗi gói chỉ mua 1 lần.")]
+    public bool allowRepeatPurchase = true;
 
     [Header("Coin Packs - iap1=0,30$ (100) | iap2=0,49$ (200) | iap3=0,99$ (400) | iap4=1,99$ (600) | iap5=2,99$ (1000) | iap6=4,99$ (2000) | iap7=9,99$ (5000)")]
     public string productIap1 = "iap1";
@@ -83,14 +85,15 @@ public class IAPManager : MonoBehaviour, IDetailedStoreListener
 
         var builder = ConfigurationBuilder.Instance(StandardPurchasingModule.Instance());
 
-        // Các gói Stickman Rush trên Google Play: iap1–iap7 (tính phí một lần)
-        builder.AddProduct(productIap1, ProductType.NonConsumable);
-        builder.AddProduct(productIap2, ProductType.NonConsumable);
-        builder.AddProduct(productIap3, ProductType.NonConsumable);
-        builder.AddProduct(productIap4, ProductType.NonConsumable);
-        builder.AddProduct(productIap5, ProductType.NonConsumable);
-        builder.AddProduct(productIap6, ProductType.NonConsumable);
-        builder.AddProduct(productIap7, ProductType.NonConsumable);
+        // iap1–iap7: coin pack — Consumable khi allowRepeatPurchase = true
+        var productType = allowRepeatPurchase ? ProductType.Consumable : ProductType.NonConsumable;
+        builder.AddProduct(productIap1, productType);
+        builder.AddProduct(productIap2, productType);
+        builder.AddProduct(productIap3, productType);
+        builder.AddProduct(productIap4, productType);
+        builder.AddProduct(productIap5, productType);
+        builder.AddProduct(productIap6, productType);
+        builder.AddProduct(productIap7, productType);
 
         Debug.Log("[IAP] Gọi UnityPurchasing.Initialize – đăng ký iap1–iap7.");
         UnityPurchasing.Initialize(this, builder);
@@ -141,8 +144,11 @@ public class IAPManager : MonoBehaviour, IDetailedStoreListener
         else if (id == productIap6) { AddCoins(2000); UpdateUICoins(); }
         else if (id == productIap7) { AddCoins(5000); UpdateUICoins(); }
 
-        PlayerPrefs.SetInt("IAP_" + id, 1);
-        PlayerPrefs.Save();
+        if (!allowRepeatPurchase)
+        {
+            PlayerPrefs.SetInt("IAP_" + id, 1);
+            PlayerPrefs.Save();
+        }
         return PurchaseProcessingResult.Complete;
     }
 
@@ -269,6 +275,8 @@ public class IAPManager : MonoBehaviour, IDetailedStoreListener
     /// <summary>Đã mua gói theo productId chưa (vd: iap1, iap2...).</summary>
     public static bool HasPurchased(string productId)
     {
+        if (Instance != null && Instance.allowRepeatPurchase)
+            return false;
         return PlayerPrefs.GetInt("IAP_" + productId, 0) == 1;
     }
 }
