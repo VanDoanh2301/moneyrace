@@ -26,6 +26,7 @@ public class ShopPanel_tetris : MonoBehaviour
         PointsWallet.m_OnPointsChanged += OnPointsChanged;
 
         RefreshPoints();
+        RefreshIapPrices();
     }
 
     private void OnDisable()
@@ -42,6 +43,15 @@ public class ShopPanel_tetris : MonoBehaviour
         if (m_ShopButton != null) m_ShopButton.SetActive(false);
 
         RefreshPoints();
+        RefreshIapPrices();
+    }
+
+    /// <summary>Refresh giá từng gói theo productId (tránh hiện placeholder / giá cũ khi mở shop).</summary>
+    private void RefreshIapPrices()
+    {
+        var buttons = GetComponentsInChildren<IAPButton>(true);
+        for (int i = 0; i < buttons.Length; i++)
+            buttons[i].RefreshPrice();
     }
 
     /// <summary>Đóng shop (gọi từ nút Back).</summary>

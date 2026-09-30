@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -20,32 +21,80 @@ public class IAPButton : MonoBehaviour
     /// <summary>Chữ giá tạm đặt sẵn trong scene, dùng lại khi store chưa trả về giá thật.</summary>
     private string _placeholder;
 
+    private bool _subscribed;
+    private Coroutine _bindRoutine;
+
     private void Awake()
     {
         _button = GetComponent<Button>();
         _button.onClick.AddListener(OnClick);
 
         if (priceText != null)
-        {
             _placeholder = priceText.text;
-        }
     }
 
     private void OnEnable()
     {
-        if (IAPManager.Instance != null)
-        {
-            IAPManager.Instance.OnIAPInitialized += UpdatePriceDisplay;
+        TrySubscribeAndRefresh();
 
-            if (IAPManager.Instance.IsInitialized)
-                UpdatePriceDisplay();
+        // Shop/IAPButton có thể OnEnable trước IAPManager.Awake → phải đợi Instance.
+        if (!_subscribed || IAPManager.Instance == null || !IAPManager.Instance.IsInitialized)
+        {
+            if (_bindRoutine == null)
+                _bindRoutine = StartCoroutine(BindWhenReady());
         }
     }
 
     private void OnDisable()
     {
-        if (IAPManager.Instance != null)
-            IAPManager.Instance.OnIAPInitialized -= UpdatePriceDisplay;
+        if (_bindRoutine != null)
+        {
+            StopCoroutine(_bindRoutine);
+            _bindRoutine = null;
+        }
+
+        Unsubscribe();
+    }
+
+    private IEnumerator BindWhenReady()
+    {
+        while (IAPManager.Instance == null)
+            yield return null;
+
+        TrySubscribeAndRefresh();
+
+        while (IAPManager.Instance != null && !IAPManager.Instance.IsInitialized)
+            yield return null;
+
+        UpdatePriceDisplay();
+        _bindRoutine = null;
+    }
+
+    private void TrySubscribeAndRefresh()
+    {
+        if (IAPManager.Instance == null)
+            return;
+
+        if (!_subscribed)
+        {
+            IAPManager.Instance.OnIAPInitialized += UpdatePriceDisplay;
+            _subscribed = true;
+        }
+
+        if (IAPManager.Instance.IsInitialized)
+            UpdatePriceDisplay();
+    }
+
+    private void Unsubscribe()
+    {
+        if (!_subscribed || IAPManager.Instance == null)
+        {
+            _subscribed = false;
+            return;
+        }
+
+        IAPManager.Instance.OnIAPInitialized -= UpdatePriceDisplay;
+        _subscribed = false;
     }
 
     private void OnClick()
@@ -59,9 +108,16 @@ public class IAPButton : MonoBehaviour
         IAPManager.Instance.BuyProduct(productId);
     }
 
+    /// <summary>Gọi lại khi mở Shop để chắc chắn giá đúng productId.</summary>
+    public void RefreshPrice()
+    {
+        UpdatePriceDisplay();
+    }
+
     private void UpdatePriceDisplay()
     {
-        if (priceText == null || IAPManager.Instance == null) return;
+        if (priceText == null || IAPManager.Instance == null)
+            return;
 
         var product = IAPManager.Instance.GetProduct(productId);
 
@@ -74,9 +130,7 @@ public class IAPButton : MonoBehaviour
         if (!HasRealPrice(price))
         {
             if (!string.IsNullOrEmpty(_placeholder))
-            {
                 priceText.text = _placeholder;
-            }
 
             return;
         }
@@ -87,11 +141,13 @@ public class IAPButton : MonoBehaviour
     /// <summary>Chuỗi giá chỉ dùng được khi có ít nhất một chữ số khác 0 ("0", "0.00", "" đều bỏ).</summary>
     private static bool HasRealPrice(string price)
     {
-        if (string.IsNullOrEmpty(price)) return false;
+        if (string.IsNullOrEmpty(price))
+            return false;
 
         for (int i = 0; i < price.Length; i++)
         {
-            if (price[i] >= '1' && price[i] <= '9') return true;
+            if (price[i] >= '1' && price[i] <= '9')
+                return true;
         }
 
         return false;
