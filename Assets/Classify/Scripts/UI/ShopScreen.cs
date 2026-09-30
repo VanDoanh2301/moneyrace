@@ -30,6 +30,15 @@ public class ShopScreen : UIScreen
     {
         base.Show(animate);
         RefreshCoins();
+        RefreshIapPrices();
+    }
+
+    /// <summary>Refresh giá từng gói theo productId (tránh hiện placeholder / giá cũ khi mở shop).</summary>
+    private void RefreshIapPrices()
+    {
+        var buttons = GetComponentsInChildren<IAPButton>(true);
+        for (int i = 0; i < buttons.Length; i++)
+            buttons[i].RefreshPrice();
     }
 
     public void ShowShopScreen()
