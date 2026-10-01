@@ -23,11 +23,14 @@ namespace CubeJumpEditor
 
         // Layout 1080x1920 (dọc)
         private const float PanelWidth = 900f;
-        private const float PanelHeight = 1540f;
+        private const float PanelHeight = 1720f;
         private const float RowWidth = 820f;
-        private const float RowHeight = 150f;
-        private const float RowGap = 14f;
-        private const float FirstRowY = 260f;
+
+        // Dòng phải đủ cao để xếp chữ giá XUỐNG DƯỚI nút BUY: sprite iv_buy đã in sẵn
+        // chữ "BUY", đè text giá lên trên là không đọc được.
+        private const float RowHeight = 185f;
+        private const float RowGap = 12f;
+        private const float FirstRowY = 245f;
 
         private static readonly Color Dim = new Color(0f, 0f, 0f, 0.72f);
         private static readonly Color PanelTint = new Color(0.14f, 0.16f, 0.24f, 1f);
@@ -142,9 +145,10 @@ namespace CubeJumpEditor
             RectTransform title = UIBuildUtil.TopCenter("title", panel, 40f, 500f, 90f);
             UIBuildUtil.AddText(title, font, "SHOP", 64f, TextAlignmentOptions.Center, White);
 
-            // Nút back góc trên phải
+            // Nút back góc trên TRÁI — sprite iv_back là mũi tên trỏ sang trái,
+            // đặt bên phải sẽ đọc ngược hướng.
             RectTransform back = UIBuildUtil.NewUI("close button", panel);
-            UIBuildUtil.Place(back, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-30f, -30f), new Vector2(90f, 90f));
+            UIBuildUtil.Place(back, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(36f, -36f), new Vector2(84f, 84f));
             Button backButton = UIBuildUtil.IconButton(back, UIBuildUtil.LoadSprite("iv_back"));
 
             // Viên hiển thị coin
@@ -210,16 +214,19 @@ namespace CubeJumpEditor
                 new Vector2(280f, 50f));
             UIBuildUtil.AddText(amount, font, $"{pack.Coins:n0}", 40f, TextAlignmentOptions.Left, UIBuildUtil.GoldText);
 
-            // Nút mua + chữ giá
+            // Nút mua: đẩy lên nửa trên của dòng để chừa chỗ cho giá bên dưới.
             RectTransform buy = UIBuildUtil.NewUI("buy button", row);
-            UIBuildUtil.Place(buy, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-24f, 0f),
-                new Vector2(210f, 100f));
-            Image buyImage = UIBuildUtil.AddImage(buy, UIBuildUtil.LoadSprite("iv_buy"), true, false);
+            UIBuildUtil.Place(buy, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-24f, 26f),
+                new Vector2(200f, 88f));
+            Image buyImage = UIBuildUtil.AddImage(buy, UIBuildUtil.LoadSprite("iv_buy"), true, true);
             UIBuildUtil.AddButton(buy, buyImage);
 
-            RectTransform priceRect = UIBuildUtil.NewUI("price text", buy);
-            UIBuildUtil.Stretch(priceRect);
-            TextMeshProUGUI priceLabel = UIBuildUtil.AddText(priceRect, font, pack.PricePlaceholder, 36f,
+            // Chữ giá là ANH EM của nút, không phải con: sprite iv_buy đã có sẵn chữ "BUY",
+            // đặt text chồng lên trên sẽ ra hai dòng chữ đè nhau.
+            RectTransform priceRect = UIBuildUtil.NewUI("price text", row);
+            UIBuildUtil.Place(priceRect, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-24f, -50f),
+                new Vector2(200f, 48f));
+            TextMeshProUGUI priceLabel = UIBuildUtil.AddText(priceRect, font, pack.PricePlaceholder, 34f,
                 TextAlignmentOptions.Center, White);
 
             // IAPButton nằm TRÊN nút mua: nó tự AddListener trong Awake, nên không cần

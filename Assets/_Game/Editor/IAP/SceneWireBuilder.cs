@@ -35,7 +35,7 @@ namespace CubeJumpEditor
             AddCoinHud<GameplayMenu>("_scoreText");
             AddCoinHud<MainMenu>("_settingsButton");
 
-            AddShopButton<MainMenu>("_settingsButton");
+            AddShopButton<MainMenu>("_settingsButton", "_rateButton", "_creditButton");
             AddShopButton<GameoverMenu>("_homeButton");
 
             Undo.CollapseUndoOperations(group);
@@ -180,21 +180,22 @@ namespace CubeJumpEditor
 
         /// <summary>
         /// Thêm nút Shop và gán vào field "_shopButton" của menu.
-        /// Đặt ngay dưới nút lấy làm khuôn, dùng chung kích thước và điểm neo.
+        ///
+        /// Nhân bản nút lấy làm khuôn thay vì dựng từ con số 0: như vậy nút Shop thừa hưởng
+        /// nguyên nền 9-slice, kích thước, điểm neo và cấu trúc icon con của hàng nút hiện có,
+        /// chỉ cần đổi sprite của icon. Dựng tay sẽ ra nút trần không nền, lệch hẳn thiết kế.
         /// </summary>
-        private static void AddShopButton<T>(string templateFieldName) where T : Menu
+        /// <param name="slotFieldNames">
+        /// Các nút anh em mà nếu đang bị ẩn thì Shop sẽ chiếm đúng vị trí của chúng.
+        /// </param>
+        private static void AddShopButton<T>(string templateFieldName, params string[] slotFieldNames)
+            where T : Menu
         {
             T menu = Object.FindAnyObjectByType<T>(FindObjectsInactive.Include);
 
             if (menu == null)
             {
                 Debug.LogWarning($"[SceneWire] Không tìm thấy {typeof(T).Name} trong scene.");
-                return;
-            }
-
-            if (GetField<Button>(menu, "_shopButton") != null)
-            {
-                Debug.Log($"[SceneWire] {typeof(T).Name}._shopButton đã được gán, bỏ qua.");
                 return;
             }
 
@@ -212,22 +213,99 @@ namespace CubeJumpEditor
 
             UIBuildUtil.DestroyIfExists(parent, ShopButtonName);
 
-            RectTransform shopRect = UIBuildUtil.NewUI(ShopButtonName, parent);
+            GameObject go = Object.Instantiate(template.gameObject, parent);
+            go.name = ShopButtonName;
+            go.SetActive(true);
 
-            shopRect.anchorMin = templateRect.anchorMin;
-            shopRect.anchorMax = templateRect.anchorMax;
-            shopRect.pivot = templateRect.pivot;
-            shopRect.sizeDelta = templateRect.sizeDelta;
-            shopRect.anchoredPosition = templateRect.anchoredPosition
-                                        + new Vector2(0f, -(templateRect.sizeDelta.y + 24f));
+            Undo.RegisterCreatedObjectUndo(go, "Add Shop Button");
 
-            Sprite icon = UIBuildUtil.LoadIcon("shop");
-            Button shopButton = UIBuildUtil.IconButton(shopRect, icon);
+            Button shopButton = go.GetComponent<Button>();
+            shopButton.interactable = true;
+
+            var shopRect = (RectTransform)go.transform;
+            shopRect.localScale = Vector3.one;
+            shopRect.anchoredPosition = ResolveSlot(menu, templateRect, slotFieldNames);
+
+            // Xếp ngay cạnh nút mẫu trong hierarchy cho dễ tìm.
+            shopRect.SetSiblingIndex(templateRect.GetSiblingIndex());
+
+            Image icon = FindChildIcon(shopButton);
+
+            if (icon != null)
+            {
+                icon.sprite = UIBuildUtil.LoadIcon("shop");
+                icon.preserveAspect = true;
+            }
+            else
+            {
+                Debug.LogWarning($"[SceneWire] Bản sao nút Shop ({typeof(T).Name}) không có Image con " +
+                                 "để đổi thành icon shop — kiểm tra lại bằng tay.");
+            }
 
             UIBuildUtil.SetObjectField(menu, "_shopButton", shopButton);
 
-            Debug.Log($"[SceneWire] Thêm nút Shop vào {typeof(T).Name} dưới '{template.gameObject.name}' " +
-                      $"tại {shopRect.anchoredPosition}.", shopButton);
+            RegisterInMenuAnimation(menu, template.gameObject, go);
+
+            Debug.Log($"[SceneWire] Nút Shop của {typeof(T).Name}: nhân bản từ " +
+                      $"'{template.gameObject.name}', đặt tại {shopRect.anchoredPosition}.", shopButton);
+        }
+
+        /// <summary>
+        /// Nếu nút mẫu có TweenUI nằm trong MenuAnimation của menu thì bản sao cũng phải được
+        /// đăng ký, không thì lúc mở menu mọi nút khác bay vào còn nút Shop đứng im.
+        /// </summary>
+        private static void RegisterInMenuAnimation(Menu menu, GameObject template, GameObject clone)
+        {
+            TweenUI cloneTween = clone.GetComponent<TweenUI>();
+            TweenUI templateTween = template.GetComponent<TweenUI>();
+
+            if (cloneTween == null || templateTween == null) return;
+
+            MenuAnimation anim = menu.GetComponent<MenuAnimation>();
+            if (anim == null) return;
+
+            var so = new SerializedObject(anim);
+            SerializedProperty list = so.FindProperty("_objectToAnimate");
+            if (list == null) return;
+
+            bool templateIsAnimated = false;
+
+            for (int i = 0; i < list.arraySize; i++)
+            {
+                Object v = list.GetArrayElementAtIndex(i).objectReferenceValue;
+
+                if (v == cloneTween) return;              // đã đăng ký rồi
+                if (v == templateTween) templateIsAnimated = true;
+            }
+
+            if (!templateIsAnimated) return;              // nút mẫu vốn không animate thì thôi
+
+            UIBuildUtil.AppendToObjectArrayField(anim, "_objectToAnimate", cloneTween);
+
+            Debug.Log($"[SceneWire] Đăng ký TweenUI của nút Shop vào {menu.GetType().Name}.MenuAnimation.");
+        }
+
+        /// <summary>
+        /// Chọn chỗ đặt nút Shop: ưu tiên ô của một nút anh em đang bị ẩn — người thiết kế
+        /// tắt nút nào thì Shop vào đúng chỗ đó. Không có thì xếp xuống dưới nút mẫu.
+        /// </summary>
+        private static Vector2 ResolveSlot(Menu menu, RectTransform templateRect, string[] slotFieldNames)
+        {
+            foreach (string field in slotFieldNames)
+            {
+                Button candidate = GetField<Button>(menu, field);
+
+                if (candidate == null || candidate.gameObject.activeSelf) continue;
+
+                var rect = (RectTransform)candidate.transform;
+
+                Debug.Log($"[SceneWire] Dùng lại ô của '{candidate.gameObject.name}' (đang ẩn) " +
+                          $"tại {rect.anchoredPosition} cho nút Shop.");
+
+                return rect.anchoredPosition;
+            }
+
+            return templateRect.anchoredPosition + new Vector2(0f, -(templateRect.sizeDelta.y + 24f));
         }
 
         /// <summary>Lấy cha của một phần tử có sẵn trong menu để đặt phần tử mới cùng cấp.</summary>
